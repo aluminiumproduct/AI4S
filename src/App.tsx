@@ -22,7 +22,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { MaterialsEngine } from "./engine/MaterialsEngine";
-import { SurrogateModel } from "./engine/SurrogateModel";
+import { ModelWorkerClient } from "./engine/ModelWorkerClient";
+import type { ModelDiagnostics } from "./engine/SurrogateModel";
+import { DEFAULT_MODEL_CONFIG, type ModelConfig } from "./engine/models/config";
+import { seededRandom } from "./engine/models/math";
+import { ModelControls } from "./components/ModelControls";
 import type { AcquisitionStrategy } from "./engine/AcquisitionFunction";
 import { getStopReason, runActiveLearningStep } from "./engine/ActiveLearningLoop";
 import { Material, ALState, AL_CONFIG } from "./types";
@@ -30,7 +34,6 @@ import { BenchmarkSimulator } from "./components/BenchmarkSimulator";
 import { networkMessage, type NetworkIssueCode } from "./services/NetworkStatus";
 
 const engine = new MaterialsEngine();
-const model = new SurrogateModel();
 
 function initialState(budget: number): ALState {
   return { iteration: 0, budget, sampledCount: 0, bestValue: -Infinity, history: [] };
@@ -69,7 +72,7 @@ const translations = {
     candidate: "Candidate",
     pending: "Pending",
     iter: "Iter",
-    methodologyDesc: "The framework implements a high-fidelity Bayesian Optimization (BO) loop. By employing an Ensemble of Regressors as a surrogate model, the system approximates the non-convex property landscape derived from first-principles (DFT) calculations. The acquisition strategy utilizes a cost-aware probabilistic approach to balance epistemic uncertainty with predicted performance, ensuring global convergence within minimal experimental iterations.",
+    methodologyDesc: "Choose an RBF Gaussian process, tree ensembles, kNN or a linear baseline. Models train on sampled labels in a background Worker. GP posterior standard deviation and ensemble disagreement have different meanings; neither guarantees convergence or accuracy on new materials.",
     representationDesc: "Materials are encoded via a multi-fidelity descriptor set: 10D compositional vectors fused with structural motif descriptors (Lattice distortion, Coordination, Electronegativity). This high-dimensional featurization resolves the 'compositional ambiguity' inherent in polymorphs, enabling structure-property mapping with sub-eV precision.",
     objectiveDesc: "The primary objective is the accelerated discovery of wide-bandgap lithium oxides for high-voltage solid-state insulation. The system targets candidates with E_g > 6.0 eV, aiming to achieve a 5x acceleration in the discovery rate compared to conventional E-discovering workflows.",
     langToggle: "中文",
@@ -77,7 +80,10 @@ const translations = {
     docsTitle: "System Documentation & Technical Specifications",
     benchmark: "Benchmark",
     benchmarkTitle: "Discovery Performance Validation",
-    close: "Close"
+    close: "Close",
+    themeClassic: "Classic",
+    themeScience: "Science Blue",
+    perfMode: "Performance mode"
   },
   zh: {
     title: "AMI-AL 科研加速框架",
@@ -111,7 +117,7 @@ const translations = {
     candidate: "候选",
     pending: "待定",
     iter: "轮次",
-    methodologyDesc: "本框架实现了高保真贝叶斯优化 (BO) 闭环。通过利用集成回归器作为代理模型，系统能够高精度逼近基于第一性原理 (DFT) 计算的非凸性能表面。获取策略采用代价敏感的概率方法，严密平衡认知不确定性与预测性能，确保在极少实验迭代内实现全局收敛。",
+    methodologyDesc: "可选择 RBF 高斯过程、树集成、kNN 或线性基线，在后台 Worker 中使用已采样标签训练。GP 后验标准差与集成预测分歧含义不同；模型切换不保证全局收敛或对新材料的预测精度。",
     representationDesc: "材料采用多保真描述符集编码：10维成分向量与结构基元描述符（晶格畸变、配位数、电负性差异）深度融合。这种高维特征化方法解决了同质异构体固有的“成分歧义”，实现了亚电子伏特精度的结构-性能映射。",
     objectiveDesc: "核心目标是加速发现用于高压固态绝缘的宽带隙锂氧化物。系统锁定带隙 E_g > 6.0 eV 的候选材料，旨在比传统实验发现流程实现 5 倍以上的加速比。",
     langToggle: "English",
@@ -139,6 +145,8 @@ export default function App() {
   const [batchSize, setBatchSize] = useState(AL_CONFIG.BATCH_SIZE);
   const [totalBudget, setTotalBudget] = useState(AL_CONFIG.TOTAL_BUDGET);
   const [searchSpaceSize, setSearchSpaceSize] = useState(400);
+  const [modelSettings, setModelSettings] = useState<ModelConfig>({ ...DEFAULT_MODEL_CONFIG });
+  const [modelDiagnostics, setModelDiagnostics] = useState<ModelDiagnostics | undefined>();
 
   const [state, setState] = useState<ALState>(() => initialState(AL_CONFIG.TOTAL_BUDGET));
   const [isAutoRunning, setIsAutoRunning] = useState(false);
@@ -152,11 +160,22 @@ export default function App() {
   const loadRequest = useRef(0);
   const runVersion = useRef(0);
   const iterationInFlight = useRef(false);
+  const modelClient = useRef<ModelWorkerClient | null>(null);
+  const activeRun = useRef<AbortController | null>(null);
   const stopReason = getStopReason(pool, totalBudget);
+
+  const cancelComputation = () => {
+    runVersion.current++;
+    activeRun.current?.abort();
+    modelClient.current?.cancel();
+    iterationInFlight.current = false;
+    setIsIterating(false);
+  };
 
   const loadData = async (size: number) => {
     const request = ++loadRequest.current;
-    runVersion.current++;
+    cancelComputation();
+    setModelDiagnostics(undefined);
     setIsAutoRunning(false);
     setRunError(null);
     setDataIssue(null);
@@ -187,6 +206,9 @@ export default function App() {
     return () => {
       loadRequest.current++;
       runVersion.current++;
+      activeRun.current?.abort();
+      modelClient.current?.dispose();
+      iterationInFlight.current = false;
       engine.cancelLoad();
     };
   }, []);
@@ -207,24 +229,35 @@ export default function App() {
     const version = runVersion.current;
     iterationInFlight.current = true;
     setIsIterating(true);
+    const controller = new AbortController();
+    activeRun.current = controller;
     try {
-      const result = await runActiveLearningStep(pool, state, { totalBudget, batchSize, strategy }, model);
+      if (!modelClient.current) modelClient.current = new ModelWorkerClient(modelSettings);
+      const result = await runActiveLearningStep(pool, state, {
+        totalBudget, batchSize, strategy, signal: controller.signal, random: seededRandom(modelSettings.seed),
+      }, modelClient.current);
       if (version !== runVersion.current) return;
       setPool(result.pool);
       setState(result.state);
+      setModelDiagnostics(modelClient.current.diagnostics);
       if (result.stopReason) setIsAutoRunning(false);
-    } catch {
+    } catch (error) {
       if (version !== runVersion.current) return;
-      setRunError(lang === "zh" ? "迭代失败，请重置后重试。" : "Iteration failed. Reset and retry.");
+      setRunError((lang === "zh" ? "模型迭代失败，请重置后重试：" : "Model iteration failed. Reset and retry: ")
+        + (error instanceof Error ? error.message : "Unknown error"));
       setIsAutoRunning(false);
     } finally {
-      iterationInFlight.current = false;
-      setIsIterating(false);
+      if (version === runVersion.current) {
+        iterationInFlight.current = false;
+        setIsIterating(false);
+        activeRun.current = null;
+      }
     }
   };
 
   const reset = () => {
-    runVersion.current++;
+    cancelComputation();
+    setModelDiagnostics(undefined);
     setRunError(null);
     // In-place reset of the current pool to avoid re-loading from API
     const resetPool = pool.map(m => ({
@@ -308,7 +341,7 @@ export default function App() {
           </button>
           <button 
             onClick={() => {
-              if (isAutoRunning) runVersion.current++;
+              if (isAutoRunning) cancelComputation();
               setIsAutoRunning(!isAutoRunning);
             }}
             disabled={!isAutoRunning && (isLoadingData || isIterating || stopReason !== null || runError !== null)}
@@ -432,6 +465,16 @@ export default function App() {
               </div>
             </div>
           </section>
+
+          <ModelControls config={modelSettings} lang={lang} busy={isIterating} diagnostics={modelDiagnostics}
+            locked={isLoadingData || isAutoRunning || isIterating || state.iteration > 0}
+            onChange={config => {
+              cancelComputation();
+              modelClient.current?.dispose();
+              modelClient.current = null;
+              setModelSettings(config);
+              setModelDiagnostics(undefined);
+            }} />
 
           <section className={`${theme === 'classic' ? 'bg-[#141414] text-[#F5F5F0]' : 'bg-[#1A365D] text-white'} p-6 rounded-3xl shadow-xl`}>
             <h3 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2">
@@ -698,7 +741,7 @@ export default function App() {
                         </p>
                         <p className="text-xs leading-relaxed opacity-70">
                           The system follows a rigorous 4-step cycle:
-                          <br/>1. <strong>Surrogate Modeling:</strong> P(f|D) ~ Ensemble(Regressor), estimating μ(x) and σ(x).
+                          <br/>1. <strong>Surrogate Modeling:</strong> Choose a GP posterior or ensemble-based regressor to estimate μ(x) and σ(x).
                           <br/>2. <strong>Acquisition Optimization:</strong> x* = argmax α(x; P), where α is UCB, EI, or Cost-Aware variants.
                           <br/>3. <strong>Oracle Evaluation:</strong> Query f(x*) via DFT (simulated via ground truth data).
                           <br/>4. <strong>Data Augmentation:</strong> D = D ∪ {"{x*, f(x*)}"}, updating the knowledge base.
@@ -712,7 +755,7 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">Surrogate Model</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            We utilize an <strong>Ensemble of Regressors</strong> with bootstrap sampling. This approach provides not only a point prediction (Mean) but also a measure of epistemic uncertainty (Standard Deviation), which is crucial for the exploration-exploitation trade-off.
+                            Select RBF GPR (default), Random Forest, Extra Trees, Gradient Boosted Trees, kNN, Ridge, or the linear SGD baseline. Training-only feature/target standardization and seeded fitting run in a Worker. GP σ is a latent posterior standard deviation; other models expose ensemble disagreement. These quantities require validation on held-out materials.
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -745,7 +788,7 @@ export default function App() {
                     <section className="space-y-4">
                       <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-600">05. Benchmarking & AMI Alignment</h3>
                       <p className="text-sm leading-relaxed opacity-70">
-                        AMI-AL is benchmarked against the <strong>Accelerated Materials Innovation (AMI)</strong> standard. Our implementation achieves a 3.5x acceleration in discovery rate compared to random search and a 1.2x improvement over standard Gaussian Process-based BO by utilizing structural descriptors that resolve polymorph ambiguity. The system's "Cost-Aware" engine is specifically tuned for high-throughput DFT workflows.
+                        The discovery chart is a scripted illustration and does not compare the fitted models. The model benchmark script and browser Worker validation page measure synthetic fit/predict times and held-out error. Real-material accuracy, uncertainty calibration and discovery speedup require separate controlled experiments.
                       </p>
                     </section>
                   </>
@@ -766,7 +809,7 @@ export default function App() {
                         </p>
                         <p className="text-xs leading-relaxed opacity-70">
                           系统遵循严密的 4 步循环逻辑：
-                          <br/>1. <strong>代理建模:</strong> P(f|D) ~ Ensemble(Regressor)，估计 μ(x) 和 σ(x)。
+                          <br/>1. <strong>代理建模:</strong> 选择 GP 后验或集成回归模型，估计 μ(x) 和 σ(x)。
                           <br/>2. <strong>获取函数优化:</strong> x* = argmax α(x; P)，其中 α 为 UCB、EI 或代价敏感变体。
                           <br/>3. <strong>实验评估:</strong> 通过 DFT（由真实数据模拟）查询 f(x*)。
                           <br/>4. <strong>数据增强:</strong> D = D ∪ {"{x*, f(x*)}"}，更新知识库并重新训练。
@@ -780,7 +823,7 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">代理模型 (Surrogate Model)</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            我们采用带自助采样（Bootstrap）的<strong>集成回归器 (Ensemble Regressor)</strong>。这种方法不仅提供点预测（均值），还提供认知不确定性（标准差）的度量，这对于平衡探索与利用至关重要。
+                            支持 RBF GPR（默认）、随机森林、Extra Trees、梯度提升树、kNN、岭回归和线性 SGD 基线。特征与目标只按训练样本标准化，在 Worker 中按固定种子拟合。GP σ 为潜在函数后验标准差，其它模型输出集成分歧；需要独立留出材料验证，不能直接视为已校准置信区间。
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -813,7 +856,7 @@ export default function App() {
                     <section className="space-y-4">
                       <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-600">05. AMI 对标与基准测试</h3>
                       <p className="text-sm leading-relaxed opacity-70">
-                        AMI-AL 严格对标 <strong>Accelerated Materials Innovation (AMI)</strong> 标准。通过利用能够解决同质异构体歧义的结构描述符，我们的实现在发现速率上比随机搜索提高了 3.5 倍，比标准的基于高斯过程的 BO 提高了 1.2 倍。系统的“代价敏感”引擎专门针对高通量 DFT 工作流进行了优化调优。
+                        发现曲线仅为预设递推的示意动画，不是已拟合模型的对比结果。模型基准脚本和浏览器 Worker 验证页提供合成数据上的真实拟合、预测耗时与留出误差。真实材料精度、不确定性校准和发现加速比仍需单独的受控实验。
                       </p>
                     </section>
                   </>

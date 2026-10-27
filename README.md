@@ -11,6 +11,7 @@
 ## 功能特性
 
 - **主动学习闭环**：集成代理模型（Surrogate Model）、获取函数（Acquisition Function）与实验预算管理，支持 UCB / EI / 不确定性采样 / 随机基线等多种策略。
+- **七种可选代理模型**：RBF 高斯过程（默认）、随机森林、Extra Trees、梯度提升回归树、kNN、岭回归和 Bootstrap 线性 SGD 基线。训练与批量预测在 Web Worker 中执行，支持取消与固定种子；参数、耗时和不确定性含义在界面展示。
 - **真实数据接入**：通过 `/api/materials` 代理接口批量拉取 Materials Project 的锂氧化物（Li-O）材料数据，并自动回退到模拟数据。
 - **代价敏感优化**：获取函数按材料的计算代价（原子数、结构复杂度）归一化，优先推荐“单位 DFT 小时价值”更高的候选。
 - **多保真特征表示**：13 维材料描述符（10 维成分 + 3 维结构基元），支持同质异构体（polymorph）区分。
@@ -49,7 +50,9 @@ AI4S/
 │   ├── engine/
 │   │   ├── ActiveLearningLoop.ts         # 有界单轮采样、预算与停止原因
 │   │   ├── MaterialsEngine.ts         # 数据加载与特征工程
-│   │   ├── SurrogateModel.ts          # 集成回归代理模型
+│   │   ├── SurrogateModel.ts          # 七种回归模型的标准化与统一接口
+│   │   ├── ModelWorkerClient.ts       # 任务、取消、超时与隔离的标签边界
+│   │   ├── models/                    # RBF GP、CART/森林/GBDT、kNN、Ridge、SGD
 │   │   └── AcquisitionFunction.ts     # UCB / EI / Uncertainty / Random
 │   └── services/
 │       └── MaterialsProjectService.ts # Materials Project API 封装
@@ -134,7 +137,7 @@ npm run dev
 
 1. **数据加载**：启动时从 `/api/materials?limit=` 拉取 Li-O 材料数据，失败时自动使用 Mock 数据。
 2. **初始采样**：随机选取最多 `INITIAL_SAMPLES`（默认 5）个材料作为种子，数量不超过可用候选与样本预算；空池禁止运行。
-3. **代理模型训练**：使用集成线性回归器拟合已采样数据，输出预测均值 `μ(x)` 与标准差 `σ(x)`。
+3. **代理模型训练**：按选择的模型拟合已采样数据，特征/目标仅按训练集标准化；后台 Worker 输出预测均值 `μ(x)` 与标准差 `σ(x)`。GP 返回潜在函数后验标准差，其它模型返回集成分歧，含义见[模型说明](docs/surrogate-models.md)。
 4. **获取函数计算**：对未采样材料计算 UCB / EI / 不确定性分数。
 5. **批量选择**：按获取函数值排序，选取最多 `BATCH_SIZE`（默认 2）个材料，受剩余预算与候选数量约束；计数以实际已采样记录为准。
 6. **状态更新**：记录最佳性能、regret 等指标，进入下一轮迭代。
@@ -155,6 +158,16 @@ AL_CONFIG = {
 ```
 
 ---
+
+## 代理模型选择与验证
+
+在侧栏“代理模型”中选择模型，展开“模型参数”调整训练种子和相应超参数。开始迭代后参数锁定，需先重置再切换模型。停止、重置、重新加载数据和离开页面均会取消后台计算；旧任务不能覆盖新状态。每项任务最长 30 秒，无同步主线程训练回退。
+
+GPR 使用 RBF 核、Cholesky 分解和训练点距离中位数初始化长度尺度，允许调整尺度倍率和观测噪声；没有自动超参数优化。精确 GPR 最多 256 个训练样本，其它模型最多 1024；最多 128 维特征、每批 20000 个预测。超限会报错，不静默抽样。当前页面预算上限 200，处于 GP 护栏内。候选池数量与训练样本数量不同；没有对所有候选构建完整协方差矩阵。
+
+运行 `npm run benchmark:models` 可输出固定种子、50 个训练样本、1000 个独立合成候选的实际耗时和 RMSE。启动开发服务后打开 `/tests/browser/models.html` 可验证七种真实 Worker、主线程动画、取消和重启。合成数据结果不能作为真实材料精度或发现加速比。
+
+完整实现、参数、复杂度和科学边界见 [docs/surrogate-models.md](docs/surrogate-models.md)。
 
 ## 后端 API
 
@@ -245,7 +258,7 @@ DEEPSEEK_BASE_URL="https://api.moonshot.cn/v1"
 ## 注意事项
 
 - `.env` 文件已加入 `.gitignore`，请勿将真实 API Key 提交到仓库。
-- 当前代理模型使用集成线性回归器做演示，生产环境建议替换为高斯过程回归（GPR）或图神经网络（GNN）。
+- 当前新增七种轻量回归模型；GP 后验依赖核与噪声假设，树间/Bootstrap 分歧不是已校准置信区间。非 GP 的 EI/UCB 为启发式分数。真实材料适用性需要独立留出集、按组成分组的划分及校准测试；未包含 GNN、SVR、MLP、XGBoost 或 LightGBM。
 - 结构描述符（晶格畸变、配位数、电负性差异）目前为模拟值，真实场景应从 Materials Project 结构数据或 `matminer` 提取。
 - `DISABLE_HMR=true` 可在 AI Studio 等 agent 编辑环境中禁用 HMR，避免文件监听导致的闪烁。
 

@@ -8,7 +8,7 @@ import { material, state } from "./fixtures";
 const config: StepConfig = { totalBudget: 50, batchSize: 2, strategy: "UCB", random: () => 0 };
 const fakeModel: Surrogate = {
   train() {},
-  predict(candidate) { return { mean: candidate.trueProperty, std: 0.25 }; },
+  predict() { return { mean: 1, std: 0.25 }; },
 };
 const pool = (size: number) => Array.from({ length: size }, (_, i) => material(i));
 
@@ -127,5 +127,64 @@ test("EI steps with the actual surrogate remain finite and respect the budget", 
 test("invalid counts and invalid RNG values are rejected rather than looping", async () => {
   for (const options of [{ ...config, totalBudget: -1 }, { ...config, batchSize: 0 }, { ...config, initialSamples: 0 }, { ...config, random: () => 1 }]) {
     await assert.rejects(runActiveLearningStep(pool(10), state(), options, fakeModel), RangeError);
+  }
+});
+
+test("batch predictions are awaited once, ordered, and never receive hidden candidate labels", async () => {
+  let calls = 0;
+  const model: Surrogate = {
+    train() {},
+    async predictBatch(candidates) {
+      calls++;
+      assert.ok(candidates.every(candidate => Object.keys(candidate).join() === "features"));
+      return candidates.map((_, index) => ({ mean: index, std: 0 }));
+    },
+  };
+  const result = await runActiveLearningStep(pool(9), state(), config, model);
+  const unsampled = result.pool.filter(m => !m.isSampled);
+  assert.equal(calls, 1);
+  assert.deepEqual(unsampled.map(m => m.predictedMean), [0, 1, 2, 3]);
+});
+
+test("single-point compatibility path also hides candidate labels and metadata", async () => {
+  let predictions = 0;
+  await runActiveLearningStep(pool(9), state(), config, {
+    train() {},
+    predict(candidate) {
+      assert.deepEqual(Object.keys(candidate), ["features"]);
+      predictions++;
+      return { mean: 1, std: 1 };
+    },
+  });
+  assert.equal(predictions, 4);
+});
+
+test("cancellation after training prevents prediction and leaves caller state untouched", async () => {
+  const controller = new AbortController();
+  const original = pool(9);
+  let calls = 0;
+  await assert.rejects(runActiveLearningStep(original, state(), { ...config, signal: controller.signal }, {
+    train() { controller.abort(); },
+    predictBatch() { calls++; return []; },
+  }), { name: "AbortError" });
+  assert.equal(calls, 0);
+  assert.ok(original.every(m => !m.isSampled));
+});
+
+test("cancellation during batch prediction prevents committing stale results", async () => {
+  const controller = new AbortController(), original = pool(9);
+  await assert.rejects(runActiveLearningStep(original, state(), { ...config, signal: controller.signal }, {
+    train() {},
+    async predictBatch(candidates) { controller.abort(); return candidates.map(() => ({ mean: 1, std: 1 })); },
+  }), { name: "AbortError" });
+  assert.ok(original.every(m => !m.isSampled));
+});
+
+test("malformed batch outputs cannot change the pool", async () => {
+  for (const predictBatch of [() => [], candidates => candidates.map(() => ({ mean: NaN, std: 1 })),
+    candidates => candidates.map(() => ({ mean: 1, std: -1 }))]) {
+    const original = pool(8);
+    await assert.rejects(runActiveLearningStep(original, state(), config, { train() {}, predictBatch }));
+    assert.ok(original.every(m => !m.isSampled));
   }
 });

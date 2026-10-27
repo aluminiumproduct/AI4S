@@ -1,11 +1,14 @@
 import { AL_CONFIG, type ALState, type Material } from "../types";
 import { AcquisitionFunction, type AcquisitionStrategy } from "./AcquisitionFunction";
+import type { FeaturePoint } from "./SurrogateModel";
+import type { Prediction } from "./models/regressors";
 
 export type StopReason = "empty-pool" | "budget-exhausted" | "candidates-exhausted";
 
 export interface Surrogate {
   train(data: Material[]): void | Promise<void>;
-  predict(material: Material): { mean: number; std: number };
+  predict?(material: FeaturePoint): Prediction;
+  predictBatch?(materials: FeaturePoint[]): Prediction[] | Promise<Prediction[]>;
 }
 
 export interface StepConfig {
@@ -14,6 +17,7 @@ export interface StepConfig {
   strategy: AcquisitionStrategy;
   initialSamples?: number;
   random?: () => number;
+  signal?: AbortSignal;
 }
 
 export function getStopReason(pool: Material[], totalBudget: number): StopReason | null {
@@ -32,6 +36,7 @@ export async function runActiveLearningStep(
   model: Surrogate,
 ): Promise<{ pool: Material[]; state: ALState; advanced: boolean; stopReason: StopReason | null }> {
   const { totalBudget, batchSize, initialSamples = AL_CONFIG.INITIAL_SAMPLES, random = Math.random } = config;
+  config.signal?.throwIfAborted();
   if (!Number.isSafeInteger(totalBudget) || totalBudget < 0
     || !Number.isSafeInteger(batchSize) || batchSize < 1
     || !Number.isSafeInteger(initialSamples) || initialSamples < 1) {
@@ -68,14 +73,23 @@ export async function runActiveLearningStep(
 
   const sampled = nextPool.filter(material => material.isSampled);
   await model.train(sampled);
+  config.signal?.throwIfAborted();
   const bestObserved = Math.max(...sampled.map(material => material.trueProperty));
-  for (const material of nextPool) {
-    if (!material.isSampled) {
-      const { mean, std } = model.predict(material);
-      material.predictedMean = mean;
-      material.predictedStd = std;
-      material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true);
-    }
+  const candidatesToPredict = nextPool.filter(material => !material.isSampled);
+  const predictions = model.predictBatch
+    ? await model.predictBatch(candidatesToPredict.map(material => ({ features: material.features })))
+    : candidatesToPredict.map(material => {
+      if (!model.predict) throw new Error("Surrogate requires a prediction method");
+      return model.predict({ features: material.features });
+    });
+  config.signal?.throwIfAborted();
+  if (predictions.length !== candidatesToPredict.length) throw new Error("Prediction count does not match candidates");
+  for (let i = 0; i < candidatesToPredict.length; i++) {
+    const material = candidatesToPredict[i], { mean, std } = predictions[i];
+    if (!Number.isFinite(mean) || !Number.isFinite(std) || std < 0) throw new Error("Invalid surrogate prediction");
+    material.predictedMean = mean;
+    material.predictedStd = std;
+    material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true);
   }
 
   if (!initializing) {
