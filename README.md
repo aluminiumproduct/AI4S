@@ -44,6 +44,7 @@ AI4S/
 │   ├── components/
 │   │   └── BenchmarkSimulator.tsx     # 基准测试弹窗组件
 │   ├── engine/
+│   │   ├── ActiveLearningLoop.ts         # 有界单轮采样、预算与停止原因
 │   │   ├── MaterialsEngine.ts         # 数据加载与特征工程
 │   │   ├── SurrogateModel.ts          # 集成回归代理模型
 │   │   └── AcquisitionFunction.ts     # UCB / EI / Uncertainty / Random
@@ -111,6 +112,7 @@ npm run dev
 | `npm run build` | 构建生产包到 `dist/` |
 | `npm run preview` | 预览生产构建 |
 | `npm run lint` | 运行 TypeScript 类型检查（`tsc --noEmit`） |
+| `npm test` | 运行采样边界、数据加载与 EI 数值回归测试（无需 API 密钥） |
 | `npm run clean` | 删除 `dist/` 目录 |
 
 ---
@@ -118,11 +120,15 @@ npm run dev
 ## 主动学习工作流
 
 1. **数据加载**：启动时从 `/api/materials?limit=` 拉取 Li-O 材料数据，失败时自动使用 Mock 数据。
-2. **初始采样**：随机选取 `INITIAL_SAMPLES`（默认 5）个材料作为种子。
+2. **初始采样**：随机选取最多 `INITIAL_SAMPLES`（默认 5）个材料作为种子，数量不超过可用候选与样本预算；空池禁止运行。
 3. **代理模型训练**：使用集成线性回归器拟合已采样数据，输出预测均值 `μ(x)` 与标准差 `σ(x)`。
 4. **获取函数计算**：对未采样材料计算 UCB / EI / 不确定性分数。
-5. **批量选择**：按获取函数值排序，选取 `BATCH_SIZE`（默认 2）个材料加入已采样集。
+5. **批量选择**：按获取函数值排序，选取最多 `BATCH_SIZE`（默认 2）个材料，受剩余预算与候选数量约束；计数以实际已采样记录为准。
 6. **状态更新**：记录最佳性能、regret 等指标，进入下一轮迭代。
+
+样本预算用完或候选耗尽时停止，空池与停止原因会显示在页面中。`MAX_ITERATIONS` 当前仅保留为配置项，不参与停止判断。
+
+每次数据加载均替换整个数据集，只有最新请求可以提交结果。Mock 模式保留每种组成生成两个模拟多晶型的演示约定，因此请求规模 N 对应 2N 个候选；重复加载不会继续累加，也不会混入此前的真实材料记录。
 
 默认配置见 `src/types.ts`：
 

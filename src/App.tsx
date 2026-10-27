@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   ScatterChart, Scatter, ZAxis, Cell
@@ -23,12 +23,17 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { MaterialsEngine } from "./engine/MaterialsEngine";
 import { SurrogateModel } from "./engine/SurrogateModel";
-import { AcquisitionFunction, AcquisitionStrategy } from "./engine/AcquisitionFunction";
+import type { AcquisitionStrategy } from "./engine/AcquisitionFunction";
+import { getStopReason, runActiveLearningStep } from "./engine/ActiveLearningLoop";
 import { Material, ALState, AL_CONFIG } from "./types";
 import { BenchmarkSimulator } from "./components/BenchmarkSimulator";
 
 const engine = new MaterialsEngine();
 const model = new SurrogateModel();
+
+function initialState(budget: number): ALState {
+  return { iteration: 0, budget, sampledCount: 0, bestValue: -Infinity, history: [] };
+}
 
 const translations = {
   en: {
@@ -134,30 +139,50 @@ export default function App() {
   const [totalBudget, setTotalBudget] = useState(AL_CONFIG.TOTAL_BUDGET);
   const [searchSpaceSize, setSearchSpaceSize] = useState(400);
 
-  const [state, setState] = useState<ALState>({
-    iteration: 0,
-    budget: AL_CONFIG.TOTAL_BUDGET,
-    sampledCount: 0,
-    bestValue: -Infinity,
-    history: [],
-  });
+  const [state, setState] = useState<ALState>(() => initialState(AL_CONFIG.TOTAL_BUDGET));
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [isRealData, setIsRealData] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [showBenchmark, setShowBenchmark] = useState(false);
   const [theme, setTheme] = useState<'classic' | 'science'>('classic');
+  const [isIterating, setIsIterating] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const loadRequest = useRef(0);
+  const runVersion = useRef(0);
+  const iterationInFlight = useRef(false);
+  const stopReason = getStopReason(pool, totalBudget);
 
   const loadData = async (size: number) => {
+    const request = ++loadRequest.current;
+    runVersion.current++;
+    setIsAutoRunning(false);
+    setRunError(null);
     setIsLoadingData(true);
-    const success = await engine.loadRealData(size);
-    setPool(engine.getPool());
-    setIsRealData(success);
-    setIsLoadingData(false);
-    setIsLoaded(true);
+    try {
+      const success = await engine.loadRealData(size);
+      if (request !== loadRequest.current) return;
+      setPool(engine.getPool());
+      setIsRealData(success);
+      setState(initialState(totalBudget));
+      setIsLoaded(true);
+    } catch {
+      if (request !== loadRequest.current) return;
+      setPool([]);
+      setState(initialState(totalBudget));
+      setIsRealData(false);
+      setRunError(lang === "zh" ? "数据加载失败，请重试。" : "Data loading failed. Please retry.");
+      setIsLoaded(true);
+    } finally {
+      if (request === loadRequest.current) setIsLoadingData(false);
+    }
   };
 
   useEffect(() => {
-    loadData(searchSpaceSize);
+    void loadData(searchSpaceSize);
+    return () => {
+      loadRequest.current++;
+      runVersion.current++;
+    };
   }, []);
 
   // Performance-optimized chart data (downsampling for large datasets)
@@ -172,89 +197,29 @@ export default function App() {
   }, [pool]);
 
   const runIteration = async () => {
-    if (state.sampledCount >= totalBudget) return;
-
-    // Deep clone state and pool to avoid "object is not extensible" errors
-    const newState = { 
-      ...state, 
-      history: [...state.history] 
-    };
-    // Map to new objects to ensure they are extensible
-    const newPool = pool.map(m => ({ ...m }));
-
-    // 1. Initial Sampling if iteration 0
-    if (state.iteration === 0 && state.sampledCount === 0) {
-      const initialIndices: number[] = [];
-      while (initialIndices.length < AL_CONFIG.INITIAL_SAMPLES) {
-        const idx = Math.floor(Math.random() * newPool.length);
-        if (!initialIndices.includes(idx)) initialIndices.push(idx);
-      }
-      
-      initialIndices.forEach(idx => {
-        newPool[idx].isSampled = true;
-        newPool[idx].iteration = 0;
-      });
-      newState.sampledCount = AL_CONFIG.INITIAL_SAMPLES;
+    if (iterationInFlight.current || isLoadingData) return;
+    const version = runVersion.current;
+    iterationInFlight.current = true;
+    setIsIterating(true);
+    try {
+      const result = await runActiveLearningStep(pool, state, { totalBudget, batchSize, strategy }, model);
+      if (version !== runVersion.current) return;
+      setPool(result.pool);
+      setState(result.state);
+      if (result.stopReason) setIsAutoRunning(false);
+    } catch {
+      if (version !== runVersion.current) return;
+      setRunError(lang === "zh" ? "迭代失败，请重置后重试。" : "Iteration failed. Reset and retry.");
+      setIsAutoRunning(false);
+    } finally {
+      iterationInFlight.current = false;
+      setIsIterating(false);
     }
-
-    // 2. Train Surrogate Model
-    const currentSampled = newPool.filter(m => m.isSampled);
-    await model.train(currentSampled);
-
-    // 3. Predict on Unsampled Pool
-    newPool.forEach(m => {
-      if (!m.isSampled) {
-        const { mean, std } = model.predict(m);
-        m.predictedMean = mean;
-        m.predictedStd = std;
-      }
-    });
-
-    // 4. Compute Acquisition Values
-    const currentBest = Math.max(...currentSampled.map(m => m.trueProperty));
-    newPool.forEach(m => {
-      if (!m.isSampled) {
-        m.acquisitionValue = AcquisitionFunction.compute(m, strategy, currentBest, 2.0, true);
-      }
-    });
-
-    // 5. Select Batch (if not initial)
-    if (state.iteration > 0 || state.sampledCount > AL_CONFIG.INITIAL_SAMPLES) {
-      const candidates = newPool
-        .filter(m => !m.isSampled)
-        .sort((a, b) => (b.acquisitionValue || 0) - (a.acquisitionValue || 0))
-        .slice(0, batchSize);
-
-      candidates.forEach(c => {
-        c.isSampled = true;
-        c.iteration = state.iteration;
-      });
-      newState.sampledCount += batchSize;
-    }
-
-    // 6. Update State
-    const updatedSampled = newPool.filter(m => m.isSampled);
-    const bestVal = Math.max(...updatedSampled.map(m => m.trueProperty));
-    const globalMax = engine.getGlobalMax();
-
-    newState.iteration += 1;
-    newState.bestValue = bestVal;
-    
-    // Calculate regret with higher precision to avoid premature 0
-    const currentRegret = globalMax - bestVal;
-    
-    newState.history.push({
-      iteration: newState.iteration,
-      bestValue: bestVal,
-      avgError: 0, 
-      regret: currentRegret > 1e-6 ? currentRegret : 0,
-    });
-
-    setPool(newPool);
-    setState(newState);
   };
 
   const reset = () => {
+    runVersion.current++;
+    setRunError(null);
     // In-place reset of the current pool to avoid re-loading from API
     const resetPool = pool.map(m => ({
       ...m,
@@ -266,27 +231,19 @@ export default function App() {
     }));
     
     setPool(resetPool);
-    setState({
-      iteration: 0,
-      budget: totalBudget,
-      sampledCount: 0,
-      bestValue: -Infinity,
-      history: [],
-    });
+    setState(initialState(totalBudget));
     setIsAutoRunning(false);
   };
 
   useEffect(() => {
-    let interval: any;
-    if (isAutoRunning && state.sampledCount < totalBudget) {
-      interval = setInterval(() => {
-        runIteration();
-      }, 800);
-    } else {
+    if (!isAutoRunning || isLoadingData || isIterating) return;
+    if (stopReason || runError) {
       setIsAutoRunning(false);
+      return;
     }
-    return () => clearInterval(interval);
-  }, [isAutoRunning, state.sampledCount, totalBudget]);
+    const timer = setTimeout(() => { void runIteration(); }, 800);
+    return () => clearTimeout(timer);
+  }, [isAutoRunning, isLoadingData, isIterating, pool, state, strategy, batchSize, totalBudget, stopReason, runError]);
 
   if (!isLoaded) {
     return (
@@ -338,19 +295,33 @@ export default function App() {
           </button>
           <button 
             onClick={reset}
+            disabled={isLoadingData}
             className={`flex items-center gap-2 px-4 py-2 border ${theme === 'classic' ? 'border-[#141414] hover:bg-[#141414] hover:text-[#F5F5F0]' : 'border-[#2B6CB0] text-[#2B6CB0] hover:bg-[#2B6CB0] hover:text-white'} transition-colors text-xs uppercase font-bold tracking-tighter`}
           >
             <RotateCcw size={14} /> {t.reset}
           </button>
           <button 
-            onClick={() => setIsAutoRunning(!isAutoRunning)}
-            disabled={state.sampledCount >= totalBudget}
+            onClick={() => {
+              if (isAutoRunning) runVersion.current++;
+              setIsAutoRunning(!isAutoRunning);
+            }}
+            disabled={!isAutoRunning && (isLoadingData || isIterating || stopReason !== null || runError !== null)}
             className={`flex items-center gap-2 px-6 py-2 ${isAutoRunning ? 'bg-red-500 text-white border-red-500' : (theme === 'classic' ? 'bg-[#141414] text-[#F5F5F0]' : 'bg-[#2B6CB0] text-white')} border border-transparent transition-colors text-xs uppercase font-bold tracking-tighter disabled:opacity-30`}
           >
             {isAutoRunning ? <><AlertCircle size={14} /> {t.stop}</> : <><Play size={14} /> {t.runLoop}</>}
           </button>
         </div>
       </header>
+
+      {!isLoadingData && (runError || stopReason) && (
+        <p role={runError ? "alert" : "status"} className="max-w-7xl mx-auto mb-6 p-3 rounded-lg bg-amber-50 text-amber-900">
+          {runError || (stopReason === "empty-pool"
+            ? (lang === "zh" ? "没有候选材料，请同步数据后再运行。" : "No candidate materials. Sync data before running.")
+            : stopReason === "budget-exhausted"
+              ? (lang === "zh" ? "已达到采样预算。" : "Sampling budget reached.")
+              : (lang === "zh" ? "候选材料已全部采样。" : "All candidate materials have been sampled."))}
+        </p>
+      )}
 
       <main className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
         {/* Sidebar: Config & Stats */}

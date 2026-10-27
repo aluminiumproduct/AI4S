@@ -8,6 +8,15 @@ import type { MPData } from "../services/MaterialsProjectService";
 export class MaterialsEngine {
   private pool: Material[] = [];
   private globalMax: number = 0;
+  private loadVersion = 0;
+  private isRealData = false;
+
+  private replacePool(pool: Material[], isRealData: boolean) {
+    this.pool = pool;
+    this.globalMax = pool.reduce((max, material) => Math.max(max, material.trueProperty), -Infinity);
+    if (pool.length === 0) this.globalMax = 0;
+    this.isRealData = isRealData;
+  }
 
   /**
    * Enhanced featurizer including structural descriptors.
@@ -34,11 +43,15 @@ export class MaterialsEngine {
   }
 
   async loadRealData(limit: number = 150): Promise<boolean> {
+    if (!Number.isSafeInteger(limit) || limit < 0) {
+      throw new RangeError("Material count must be a non-negative integer");
+    }
+    const version = ++this.loadVersion;
     try {
       const response = await axios.get(`/api/materials?limit=${limit}`);
       const data: MPData[] = response.data.data;
       
-      this.pool = data.map(m => {
+      const pool = data.map(m => {
         const features = this.featurize(m);
         // Cost is proportional to the number of atoms (simulating DFT complexity)
         const totalAtoms = Object.values(m.composition).reduce((a, b) => a + b, 0);
@@ -55,16 +68,20 @@ export class MaterialsEngine {
         };
       });
 
-      this.globalMax = Math.max(...this.pool.map(m => m.trueProperty));
+      // Only the latest request owns the dataset, including its global maximum.
+      if (version !== this.loadVersion) return this.isRealData;
+      this.replacePool(pool, true);
       return true;
     } catch (e) {
+      if (version !== this.loadVersion) return this.isRealData;
       console.warn("Failed to load real data from API, falling back to mock.");
-      this.generateMockPool(limit);
+      this.replacePool(this.generateMockPool(limit), false);
       return false;
     }
   }
 
-  private generateMockPool(size: number) {
+  private generateMockPool(size: number): Material[] {
+    const pool: Material[] = [];
     const elements = ["Li", "La", "Zr", "O", "P", "S", "Ge", "Sn"];
     for (let i = 0; i < size; i++) {
       const composition: Record<string, number> = {};
@@ -92,7 +109,7 @@ export class MaterialsEngine {
         const totalAtoms = Object.values(composition).reduce((a, b) => a + b, 0);
         const cost = 1 + (totalAtoms * 0.3) + (p * 0.5); // Polymorph 2 might be more complex
 
-        this.pool.push({ 
+        pool.push({
           id: `mock-${i}-${p}`, 
           formula: p === 1 ? `${formula} (β)` : formula, 
           composition, 
@@ -103,7 +120,7 @@ export class MaterialsEngine {
         });
       }
     }
-    this.globalMax = Math.max(...this.pool.map(m => m.trueProperty));
+    return pool;
   }
 
   getPool() { return this.pool; }
