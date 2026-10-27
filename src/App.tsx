@@ -27,6 +27,8 @@ import type { AcquisitionStrategy } from "./engine/AcquisitionFunction";
 import { getStopReason, runActiveLearningStep } from "./engine/ActiveLearningLoop";
 import { Material, ALState, AL_CONFIG } from "./types";
 import { BenchmarkSimulator } from "./components/BenchmarkSimulator";
+import { CompositionDescriptorPanel } from "./components/CompositionDescriptorPanel";
+import { hashString } from "./engine/SeededRandom";
 
 const engine = new MaterialsEngine();
 const model = new SurrogateModel();
@@ -49,7 +51,7 @@ const translations = {
     liveMetrics: "Live Metrics",
     iteration: "Iteration",
     sampledTotal: "Sampled / Total",
-    bestConductivity: "Best Property (log)",
+    bestConductivity: "Best Observed Target",
     regretCurve: "Optimization Regret Curve",
     searchSpace: "Search Space Exploration",
     recommendations: "Recent Experimental Recommendations",
@@ -60,7 +62,7 @@ const translations = {
     acquisition: "Acquisition",
     trueValue: "True Value",
     cost: "Cost",
-    similarityMap: "Chemical Space Similarity Map",
+    similarityMap: "Composition Descriptor Projection",
     methodology: "Methodology",
     representation: "Representation",
     objective: "Objective",
@@ -68,15 +70,18 @@ const translations = {
     candidate: "Candidate",
     pending: "Pending",
     iter: "Iter",
-    methodologyDesc: "The framework implements a high-fidelity Bayesian Optimization (BO) loop. By employing an Ensemble of Regressors as a surrogate model, the system approximates the non-convex property landscape derived from first-principles (DFT) calculations. The acquisition strategy utilizes a cost-aware probabilistic approach to balance epistemic uncertainty with predicted performance, ensuring global convergence within minimal experimental iterations.",
-    representationDesc: "Materials are encoded via a multi-fidelity descriptor set: 10D compositional vectors fused with structural motif descriptors (Lattice distortion, Coordination, Electronegativity). This high-dimensional featurization resolves the 'compositional ambiguity' inherent in polymorphs, enabling structure-property mapping with sub-eV precision.",
-    objectiveDesc: "The primary objective is the accelerated discovery of wide-bandgap lithium oxides for high-voltage solid-state insulation. The system targets candidates with E_g > 6.0 eV, aiming to achieve a 5x acceleration in the discovery rate compared to conventional E-discovering workflows.",
+    methodologyDesc: "An offline active-learning demonstration using an ensemble of linear regressors and cost-aware acquisition. Sampling uses explicit reproducible seeds. Predictive accuracy and uncertainty calibration still require independent evaluation.",
+    representationDesc: "A shared 22-dimensional composition representation uses offline element constants: weighted means, population variances, ranges and coverage for five properties, plus a conditional ABO3 tolerance factor and validity flag. Identical compositions have identical descriptors; crystal polymorphs require additional structural data.",
+    objectiveDesc: "Real Materials Project records use database band gaps. Mock records use a labelled deterministic synthetic score; it is not a material band gap or a DFT result.",
     langToggle: "中文",
     docs: "Documentation",
     docsTitle: "System Documentation & Technical Specifications",
     benchmark: "Benchmark",
-    benchmarkTitle: "Discovery Performance Validation",
-    close: "Close"
+    benchmarkTitle: "Strategy Illustration (Not a Measured Benchmark)",
+    close: "Close",
+    themeClassic: "Classic",
+    themeScience: "Scientific Blue",
+    perfMode: "Display sampling"
   },
   zh: {
     title: "AMI-AL 科研加速框架",
@@ -91,7 +96,7 @@ const translations = {
     liveMetrics: "实时指标",
     iteration: "迭代轮次",
     sampledTotal: "已采样 / 总计",
-    bestConductivity: "最佳性能指标 (log)",
+    bestConductivity: "最佳已观察目标值",
     regretCurve: "优化收敛曲线 (Regret)",
     searchSpace: "搜索空间探索",
     recommendations: "近期实验推荐",
@@ -102,7 +107,7 @@ const translations = {
     acquisition: "获取函数值",
     trueValue: "真实值",
     cost: "实验代价",
-    similarityMap: "化学空间结构相似度图",
+    similarityMap: "组成描述符投影",
     methodology: "研究方法",
     representation: "特征表示",
     objective: "优化目标",
@@ -110,14 +115,14 @@ const translations = {
     candidate: "候选",
     pending: "待定",
     iter: "轮次",
-    methodologyDesc: "本框架实现了高保真贝叶斯优化 (BO) 闭环。通过利用集成回归器作为代理模型，系统能够高精度逼近基于第一性原理 (DFT) 计算的非凸性能表面。获取策略采用代价敏感的概率方法，严密平衡认知不确定性与预测性能，确保在极少实验迭代内实现全局收敛。",
-    representationDesc: "材料采用多保真描述符集编码：10维成分向量与结构基元描述符（晶格畸变、配位数、电负性差异）深度融合。这种高维特征化方法解决了同质异构体固有的“成分歧义”，实现了亚电子伏特精度的结构-性能映射。",
-    objectiveDesc: "核心目标是加速发现用于高压固态绝缘的宽带隙锂氧化物。系统锁定带隙 E_g > 6.0 eV 的候选材料，旨在比传统实验发现流程实现 5 倍以上的加速比。",
+    methodologyDesc: "这是采用线性集成代理与代价感知获取函数的离线主动学习演示。采样使用显式固定种子；预测精度和不确定性校准仍需独立评估。",
+    representationDesc: "真实与Mock共用22维组成表示：5类元素属性的加权均值、总体方差、极差与覆盖率，加上有条件的ABO₃容忍因子和有效位。相同组成具有相同描述符；区分同质异构体仍需真实结构数据。",
+    objectiveDesc: "真实Materials Project记录以数据库带隙为目标。Mock使用明确标记的确定性合成分数，不是材料带隙或DFT结果。",
     langToggle: "English",
     docs: "系统文档",
     docsTitle: "系统文档与技术规范",
     benchmark: "性能基准",
-    benchmarkTitle: "发现性能验证基准",
+    benchmarkTitle: "策略示意（非实测基准）",
     close: "关闭",
     themeClassic: "经典模式",
     themeScience: "科研蓝",
@@ -187,13 +192,12 @@ export default function App() {
 
   // Performance-optimized chart data (downsampling for large datasets)
   const chartData = useMemo(() => {
-    if (pool.length <= 2000) return pool;
-    // If pool is large, show all sampled + a random sample of unsampled to keep 2000 points max
-    const sampled = pool.filter(m => m.isSampled);
-    const unsampled = pool.filter(m => !m.isSampled);
-    const sampleRate = Math.max(0.05, 2000 / unsampled.length);
-    const sampledUnsampled = unsampled.filter(() => Math.random() < sampleRate);
-    return [...sampled, ...sampledUnsampled];
+    const available = pool.filter(m => Number.isFinite(m.descriptors?.statistics.electronegativityPauling.mean)
+      && Number.isFinite(m.descriptors?.statistics.covalentRadiusAngstrom.mean));
+    if (available.length <= 2000) return available;
+    const sampled = available.filter(m => m.isSampled);
+    const unsampled = available.filter(m => !m.isSampled).sort((a, b) => hashString(a.id) - hashString(b.id));
+    return [...sampled, ...unsampled.slice(0, Math.max(0, 2000 - sampled.length))];
   }, [pool]);
 
   const runIteration = async () => {
@@ -487,8 +491,8 @@ export default function App() {
               <ResponsiveContainer width="100%" height="90%">
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'classic' ? "#14141410" : "#2B6CB010"} />
-                  <XAxis type="number" dataKey="features[8]" name="Electronegativity Diff" hide />
-                  <YAxis type="number" dataKey="features[9]" name="Lattice Distortion" hide />
+                  <XAxis type="number" dataKey="descriptors.statistics.electronegativityPauling.mean" name="χ mean" tick={{ fontSize: 10 }} />
+                  <YAxis type="number" dataKey="descriptors.statistics.covalentRadiusAngstrom.mean" name="Covalent radius mean" unit=" Å" tick={{ fontSize: 10 }} />
                   <Tooltip 
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
@@ -497,8 +501,8 @@ export default function App() {
                           <div className={`${theme === 'classic' ? 'bg-[#141414] text-white' : 'bg-[#1A365D] text-white'} p-4 rounded-2xl shadow-2xl border-none text-[10px] space-y-1 backdrop-blur-md bg-opacity-90`}>
                             <p className="font-bold uppercase tracking-widest opacity-50 mb-2">{data.formula}</p>
                             <p>Cost: <span className="font-mono text-blue-300">{data.cost.toFixed(2)} units</span></p>
-                            <p>Band Gap: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)} eV</span></p>
-                            <p className="pt-1 opacity-50 italic">Structural clusters visualization</p>
+                            <p>{data.targetKind === "synthetic-score" ? "Synthetic score" : "Band gap"}: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)}{data.targetKind === "band-gap" ? " eV" : ""}</span></p>
+                            <p className="pt-1 opacity-50 italic">χ mean / covalent-radius mean (Å)</p>
                           </div>
                         );
                       }
@@ -611,6 +615,8 @@ export default function App() {
         </div>
       </main>
 
+      <CompositionDescriptorPanel key={`${isRealData}:${pool[0]?.id ?? "empty"}`} materials={pool} lang={lang} />
+
       {/* Research Methodology Modal / Info */}
       <footer className={`max-w-7xl mx-auto mt-12 grid grid-cols-3 gap-8 border-t ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pt-8 pb-12`}>
         <div className="space-y-2">
@@ -719,13 +725,13 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">Descriptor Vector</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            Materials are featurized using a 13-dimensional vector: 10 compositional dimensions (atomic fractions) + 3 structural descriptors: <strong>Lattice Distortion</strong>, <strong>Coordination Number</strong>, and <strong>Electronegativity Difference</strong>.
+                            The offline JSON table provides Pauling electronegativity, covalent and reference ionic radii, a declared valence-electron convention and atomic hardness. Weighted mean/variance/range/coverage for each property plus conditional ABO3 t/validity yield 22 scaled model inputs. Raw physical units remain visible in the descriptor panel.
                           </p>
                         </div>
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">Polymorph Differentiation</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            Unlike simple compositional models, AMI-AL can distinguish between polymorphs (e.g., α-Li2FeSiO4 vs β-Li2FeSiO4) by analyzing structural motifs, preventing the "identical composition" ambiguity in optimization.
+                            Composition alone cannot distinguish polymorphs. Equal compositions share identical descriptors. Actual lattice, coordination or distortion information must be supplied separately rather than generated from a random number.
                           </p>
                         </div>
                       </div>
@@ -734,7 +740,7 @@ export default function App() {
                     <section className="space-y-4">
                       <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-600">05. Benchmarking & AMI Alignment</h3>
                       <p className="text-sm leading-relaxed opacity-70">
-                        AMI-AL is benchmarked against the <strong>Accelerated Materials Innovation (AMI)</strong> standard. Our implementation achieves a 3.5x acceleration in discovery rate compared to random search and a 1.2x improvement over standard Gaussian Process-based BO by utilizing structural descriptors that resolve polymorph ambiguity. The system's "Cost-Aware" engine is specifically tuned for high-throughput DFT workflows.
+                        The illustration module shows reproducible synthetic curves, not measured algorithm comparisons. Discovery efficiency requires a fixed dataset, paired seeds, repeated runs and traceable observations. No acceleration factor is established by that illustration.
                       </p>
                     </section>
                   </>
@@ -787,13 +793,13 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">描述符向量</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            材料通过 13 维向量进行特征化：10 维成分维度（原子分数）+ 3 维结构描述符：<strong>晶格畸变</strong>、<strong>配位数</strong>和<strong>电负性差异</strong>。
+                            内置JSON提供鲍林电负性、共价/参考离子半径、约定价电子数和原子化学硬度。每类属性的加权均值、总体方差、极差和覆盖率，加上有条件ABO₃容忍因子及有效位，共22维缩放模型输入；面板保留原始物理单位。
                           </p>
                         </div>
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">同质异构体区分</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            与简单的成分模型不同，AMI-AL 可以通过分析结构基元来区分同质异构体（例如 α-Li2FeSiO4 与 β-Li2FeSiO4），从而消除优化过程中的“相同成分”歧义。
+                            仅凭组成不能区分同质异构体，相同组成必须得到相同描述符。真实晶格、近邻配位和畸变信息需要额外结构输入，不能以随机数代替。
                           </p>
                         </div>
                       </div>
@@ -802,7 +808,7 @@ export default function App() {
                     <section className="space-y-4">
                       <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-600">05. AMI 对标与基准测试</h3>
                       <p className="text-sm leading-relaxed opacity-70">
-                        AMI-AL 严格对标 <strong>Accelerated Materials Innovation (AMI)</strong> 标准。通过利用能够解决同质异构体歧义的结构描述符，我们的实现在发现速率上比随机搜索提高了 3.5 倍，比标准的基于高斯过程的 BO 提高了 1.2 倍。系统的“代价敏感”引擎专门针对高通量 DFT 工作流进行了优化调优。
+                        示意模块展示可重复的合成曲线，不构成算法实测对比。发现效率需要固定数据集、配对种子、多次运行和可追溯观察结果，不能从示意动画认定加速倍率。
                       </p>
                     </section>
                   </>

@@ -1,5 +1,6 @@
 import { AL_CONFIG, type ALState, type Material } from "../types";
 import { AcquisitionFunction, type AcquisitionStrategy } from "./AcquisitionFunction";
+import { createSeededRandom } from "./SeededRandom";
 
 export type StopReason = "empty-pool" | "budget-exhausted" | "candidates-exhausted";
 
@@ -31,7 +32,7 @@ export async function runActiveLearningStep(
   config: StepConfig,
   model: Surrogate,
 ): Promise<{ pool: Material[]; state: ALState; advanced: boolean; stopReason: StopReason | null }> {
-  const { totalBudget, batchSize, initialSamples = AL_CONFIG.INITIAL_SAMPLES, random = Math.random } = config;
+  const { totalBudget, batchSize, initialSamples = AL_CONFIG.INITIAL_SAMPLES, random = createSeededRandom(0x414c5345) } = config;
   if (!Number.isSafeInteger(totalBudget) || totalBudget < 0
     || !Number.isSafeInteger(batchSize) || batchSize < 1
     || !Number.isSafeInteger(initialSamples) || initialSamples < 1) {
@@ -69,12 +70,13 @@ export async function runActiveLearningStep(
   const sampled = nextPool.filter(material => material.isSampled);
   await model.train(sampled);
   const bestObserved = Math.max(...sampled.map(material => material.trueProperty));
+  const scoreRandom = createSeededRandom(0x53434f52 + state.iteration);
   for (const material of nextPool) {
     if (!material.isSampled) {
       const { mean, std } = model.predict(material);
       material.predictedMean = mean;
       material.predictedStd = std;
-      material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true);
+      material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true, scoreRandom);
     }
   }
 

@@ -1,0 +1,5617 @@
+{
+  "schemaVersion": "ai4s-elements-1.0.0",
+  "provenance": {
+    "pymatgen": {
+      "version": "2025.6.14",
+      "commit": "682bfd855dd89264b0ff8d6bee4815f8834cc5ac",
+      "url": "https://raw.githubusercontent.com/materialsproject/pymatgen/682bfd855dd89264b0ff8d6bee4815f8834cc5ac/src/pymatgen/core/periodic_table.json.gz",
+      "sha256": "3bd2d3f6aabeb08d22ce77e2a8fd04f5a37d47826cbada4d6755744ad75ae94e",
+      "license": "MIT"
+    },
+    "ase": {
+      "commit": "1435c743869c2b2eb9d511fa20129cf727a3dd64",
+      "url": "https://gitlab.com/ase/ase/-/raw/1435c743869c2b2eb9d511fa20129cf727a3dd64/ase/data/__init__.py",
+      "sha256": "0d19bf42c29dab1eaa90ef7a0b608f49a8b1092d8ee559633225cbab98e2e48d",
+      "license": "LGPL-2.1-or-later; numerical data only"
+    },
+    "covalentRadii": {
+      "doi": "10.1039/B801115J",
+      "description": "Cordero et al. (2008), representative values as tabulated by ASE; some are interpolated. No ASE placeholder values are imported."
+    },
+    "ionicRadii": {
+      "doi": "10.1107/S0567739476001551",
+      "description": "Shannon effective ionic radii (ionic_radius, not crystal_radius), indexed by oxidation state, coordination and spin."
+    }
+  },
+  "conventions": {
+    "radiiUnit": "angstrom",
+    "energyUnit": "eV",
+    "hardness": "Atomic finite-difference descriptor eta=(I1-electronAffinity)/2. Not an oxide bond dissociation energy.",
+    "valenceElectrons": "Neutral configuration count: outer-shell s/p for main-group; outer s plus (n-1)d for d-block; outer s plus (n-1)d and (n-2)f for f-block. This convention is not a compound oxidation state.",
+    "referenceIonicRadius": "Fixed documented oxidation state, VI coordination; unspecified spin preferred, otherwise High Spin then Low Spin. Not inferred from composition or structure.",
+    "missing": "null means unavailable. Values are never replaced by random numbers or ASE missing=2.0 placeholders."
+  },
+  "elements": {
+    "H": {
+      "atomicNumber": 1,
+      "name": "Hydrogen",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 0.31,
+      "neutralConfiguration": "1s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 13.598434599702,
+      "electronAffinityEv": 0.75419519,
+      "chemicalHardnessEv": 6.422119704850999,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "I",
+          "coordinationNumber": 1,
+          "spin": "unspecified",
+          "radiusAngstrom": -0.38
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": -0.18
+        }
+      ]
+    },
+    "He": {
+      "atomicNumber": 2,
+      "name": "Helium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": 0.28,
+      "neutralConfiguration": "1s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 24.587389011,
+      "electronAffinityEv": -0.52,
+      "chemicalHardnessEv": 12.5536945055,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Li": {
+      "atomicNumber": 3,
+      "name": "Lithium",
+      "electronegativityPauling": 0.98,
+      "covalentRadiusAngstrom": 1.28,
+      "neutralConfiguration": "[He].2s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 5.391714996,
+      "electronAffinityEv": 0.61804922,
+      "chemicalHardnessEv": 2.3868328880000003,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.76
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.59
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.92
+        }
+      ]
+    },
+    "Be": {
+      "atomicNumber": 4,
+      "name": "Beryllium",
+      "electronegativityPauling": 1.57,
+      "covalentRadiusAngstrom": 0.96,
+      "neutralConfiguration": "[He].2s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 9.322699,
+      "electronAffinityEv": -0.52,
+      "chemicalHardnessEv": 4.9213495,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.45
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.16
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.27
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.45
+        }
+      ]
+    },
+    "B": {
+      "atomicNumber": 5,
+      "name": "Boron",
+      "electronegativityPauling": 2.04,
+      "covalentRadiusAngstrom": 0.84,
+      "neutralConfiguration": "[He].2s2.2p1",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 8.298019,
+      "electronAffinityEv": 0.27972325,
+      "chemicalHardnessEv": 4.009147875,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.27
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.01
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.11
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.27
+        }
+      ]
+    },
+    "C": {
+      "atomicNumber": 6,
+      "name": "Carbon",
+      "electronegativityPauling": 2.55,
+      "covalentRadiusAngstrom": 0.76,
+      "neutralConfiguration": "[He].2s2.2p2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 11.260288,
+      "electronAffinityEv": 1.262122611,
+      "chemicalHardnessEv": 4.999082694499999,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.16
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": -0.08
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.15
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.16
+        }
+      ]
+    },
+    "N": {
+      "atomicNumber": 7,
+      "name": "Nitrogen",
+      "electronegativityPauling": 3.04,
+      "covalentRadiusAngstrom": 0.71,
+      "neutralConfiguration": "[He].2s2.2p3",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 14.53413,
+      "electronAffinityEv": -0.07,
+      "chemicalHardnessEv": 7.302065,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": -3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.46
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.16
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": -0.104
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.13
+        }
+      ]
+    },
+    "O": {
+      "atomicNumber": 8,
+      "name": "Oxygen",
+      "electronegativityPauling": 3.44,
+      "covalentRadiusAngstrom": 0.66,
+      "neutralConfiguration": "[He].2s2.2p4",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 13.618055,
+      "electronAffinityEv": 1.461112979,
+      "chemicalHardnessEv": 6.0784710105,
+      "referenceIon": {
+        "oxidationState": -2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.4
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -2,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.35
+        },
+        {
+          "oxidationState": -2,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.36
+        },
+        {
+          "oxidationState": -2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.38
+        },
+        {
+          "oxidationState": -2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.4
+        },
+        {
+          "oxidationState": -2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.42
+        }
+      ]
+    },
+    "F": {
+      "atomicNumber": 9,
+      "name": "Fluorine",
+      "electronegativityPauling": 3.98,
+      "covalentRadiusAngstrom": 0.57,
+      "neutralConfiguration": "[He].2s2.2p5",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 17.42282,
+      "electronAffinityEv": 3.401189824,
+      "chemicalHardnessEv": 7.010815088000001,
+      "referenceIon": {
+        "oxidationState": -1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.33
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -1,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.285
+        },
+        {
+          "oxidationState": -1,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.3
+        },
+        {
+          "oxidationState": -1,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.31
+        },
+        {
+          "oxidationState": -1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.33
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.08
+        }
+      ]
+    },
+    "Ne": {
+      "atomicNumber": 10,
+      "name": "Neon",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": 0.58,
+      "neutralConfiguration": "[He].2s2.2p6",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 21.564541,
+      "electronAffinityEv": -1.22,
+      "chemicalHardnessEv": 11.392270499999999,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Na": {
+      "atomicNumber": 11,
+      "name": "Sodium",
+      "electronegativityPauling": 0.93,
+      "covalentRadiusAngstrom": 1.66,
+      "neutralConfiguration": "[Ne].3s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 5.13907696,
+      "electronAffinityEv": 0.54792625,
+      "chemicalHardnessEv": 2.295575355,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.02
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.99
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.0
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.02
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.12
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.18
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.24
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.39
+        }
+      ]
+    },
+    "Mg": {
+      "atomicNumber": 12,
+      "name": "Magnesium",
+      "electronegativityPauling": 1.31,
+      "covalentRadiusAngstrom": 1.41,
+      "neutralConfiguration": "[Ne].3s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 7.646236,
+      "electronAffinityEv": -0.42,
+      "chemicalHardnessEv": 4.033118,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.72
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.66
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.72
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.89
+        }
+      ]
+    },
+    "Al": {
+      "atomicNumber": 13,
+      "name": "Aluminum",
+      "electronegativityPauling": 1.61,
+      "covalentRadiusAngstrom": 1.21,
+      "neutralConfiguration": "[Ne].3s2.3p1",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 5.985769,
+      "electronAffinityEv": 0.432835,
+      "chemicalHardnessEv": 2.7764670000000002,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.535
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.39
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.48
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.535
+        }
+      ]
+    },
+    "Si": {
+      "atomicNumber": 14,
+      "name": "Silicon",
+      "electronegativityPauling": 1.9,
+      "covalentRadiusAngstrom": 1.11,
+      "neutralConfiguration": "[Ne].3s2.3p2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 8.15168,
+      "electronAffinityEv": 1.38952128,
+      "chemicalHardnessEv": 3.38107936,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.4
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.26
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.4
+        }
+      ]
+    },
+    "P": {
+      "atomicNumber": 15,
+      "name": "Phosphorus",
+      "electronegativityPauling": 2.19,
+      "covalentRadiusAngstrom": 1.07,
+      "neutralConfiguration": "[Ne].3s2.3p3",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 10.486686,
+      "electronAffinityEv": 0.74660911,
+      "chemicalHardnessEv": 4.8700384450000005,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.38
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.44
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.17
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.29
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.38
+        }
+      ]
+    },
+    "S": {
+      "atomicNumber": 16,
+      "name": "Sulfur",
+      "electronegativityPauling": 2.58,
+      "covalentRadiusAngstrom": 1.05,
+      "neutralConfiguration": "[Ne].3s2.3p4",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 10.36001,
+      "electronAffinityEv": 2.07710426,
+      "chemicalHardnessEv": 4.14145287,
+      "referenceIon": {
+        "oxidationState": -2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.84
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.84
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.37
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.12
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.29
+        }
+      ]
+    },
+    "Cl": {
+      "atomicNumber": 17,
+      "name": "Chlorine",
+      "electronegativityPauling": 3.16,
+      "covalentRadiusAngstrom": 1.02,
+      "neutralConfiguration": "[Ne].3s2.3p5",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 12.967633,
+      "electronAffinityEv": 3.61272528,
+      "chemicalHardnessEv": 4.67745386,
+      "referenceIon": {
+        "oxidationState": -1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.81
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.81
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IIIPY",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.12
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.08
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.27
+        }
+      ]
+    },
+    "Ar": {
+      "atomicNumber": 18,
+      "name": "Argon",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": 1.06,
+      "neutralConfiguration": "[Ne].3s2.3p6",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 15.7596119,
+      "electronAffinityEv": -1.02,
+      "chemicalHardnessEv": 8.38980595,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "K": {
+      "atomicNumber": 19,
+      "name": "Potassium",
+      "electronegativityPauling": 0.82,
+      "covalentRadiusAngstrom": 2.03,
+      "neutralConfiguration": "[Ar].4s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 4.34066373,
+      "electronAffinityEv": 0.50145913,
+      "chemicalHardnessEv": 1.9196023000000002,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.38
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.37
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.38
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.46
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.51
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.55
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.59
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.64
+        }
+      ]
+    },
+    "Ca": {
+      "atomicNumber": 20,
+      "name": "Calcium",
+      "electronegativityPauling": 1,
+      "covalentRadiusAngstrom": 1.76,
+      "neutralConfiguration": "[Ar].4s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 6.11315547,
+      "electronAffinityEv": 0.024551,
+      "chemicalHardnessEv": 3.044302235,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.0
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.0
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.06
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.12
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.18
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.23
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.34
+        }
+      ]
+    },
+    "Sc": {
+      "atomicNumber": 21,
+      "name": "Scandium",
+      "electronegativityPauling": 1.36,
+      "covalentRadiusAngstrom": 1.7,
+      "neutralConfiguration": "[Ar].3d1.4s2",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 6.56149,
+      "electronAffinityEv": 0.17938023,
+      "chemicalHardnessEv": 3.1910548850000002,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.745
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.745
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.87
+        }
+      ]
+    },
+    "Ti": {
+      "atomicNumber": 22,
+      "name": "Titanium",
+      "electronegativityPauling": 1.54,
+      "covalentRadiusAngstrom": 1.6,
+      "neutralConfiguration": "[Ar].3d2.4s2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 6.82812,
+      "electronAffinityEv": 0.075545,
+      "chemicalHardnessEv": 3.3762875,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.605
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.86
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.67
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.42
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.51
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.605
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.74
+        }
+      ]
+    },
+    "V": {
+      "atomicNumber": 23,
+      "name": "Vanadium",
+      "electronegativityPauling": 1.63,
+      "covalentRadiusAngstrom": 1.53,
+      "neutralConfiguration": "[Ar].3d3.4s2",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 6.746187,
+      "electronAffinityEv": 0.527662,
+      "chemicalHardnessEv": 3.1092625,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.54
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.79
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.64
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.53
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.72
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.355
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.46
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.54
+        }
+      ]
+    },
+    "Cr": {
+      "atomicNumber": 24,
+      "name": "Chromium",
+      "electronegativityPauling": 1.66,
+      "covalentRadiusAngstrom": 1.39,
+      "neutralConfiguration": "[Ar].3d5.4s1",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 6.76651,
+      "electronAffinityEv": 0.67592827,
+      "chemicalHardnessEv": 3.045290865,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.615
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.73
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.8
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.615
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.41
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.55
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.345
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.49
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.26
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.44
+        }
+      ]
+    },
+    "Mn": {
+      "atomicNumber": 25,
+      "name": "Manganese",
+      "electronegativityPauling": 1.55,
+      "covalentRadiusAngstrom": 1.39,
+      "neutralConfiguration": "[Ar].3d5.4s2",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 7.434038,
+      "electronAffinityEv": -0.52,
+      "chemicalHardnessEv": 3.9770190000000003,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "High Spin",
+        "radiusAngstrom": 0.83
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.66
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.75
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.67
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.83
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.9
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.645
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.39
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.53
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.33
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.255
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.25
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.46
+        }
+      ]
+    },
+    "Fe": {
+      "atomicNumber": 26,
+      "name": "Iron",
+      "electronegativityPauling": 1.83,
+      "covalentRadiusAngstrom": 1.32,
+      "neutralConfiguration": "[Ar].3d6.4s2",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 7.9024681,
+      "electronAffinityEv": 0.15323635,
+      "chemicalHardnessEv": 3.874615875,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "High Spin",
+        "radiusAngstrom": 0.645
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.63
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.64
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.61
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.78
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.92
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.49
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.55
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.645
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.78
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.585
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.25
+        }
+      ]
+    },
+    "Co": {
+      "atomicNumber": 27,
+      "name": "Cobalt",
+      "electronegativityPauling": 1.88,
+      "covalentRadiusAngstrom": 1.26,
+      "neutralConfiguration": "[Ar].3d7.4s2",
+      "valenceElectrons": 9,
+      "firstIonizationEnergyEv": 7.88101,
+      "electronAffinityEv": 0.66225547,
+      "chemicalHardnessEv": 3.609377265,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "High Spin",
+        "radiusAngstrom": 0.745
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.67
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.65
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.745
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.9
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.61
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.545
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.4
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.53
+        }
+      ]
+    },
+    "Ni": {
+      "atomicNumber": 28,
+      "name": "Nickel",
+      "electronegativityPauling": 1.91,
+      "covalentRadiusAngstrom": 1.24,
+      "neutralConfiguration": "[Ar].3d8.4s2",
+      "valenceElectrons": 10,
+      "firstIonizationEnergyEv": 7.639878,
+      "electronAffinityEv": 1.1571612,
+      "chemicalHardnessEv": 3.2413584,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.69
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.55
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.49
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.63
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.69
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.56
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "High Spin",
+          "radiusAngstrom": 0.6
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.48
+        }
+      ]
+    },
+    "Cu": {
+      "atomicNumber": 29,
+      "name": "Copper",
+      "electronegativityPauling": 1.9,
+      "covalentRadiusAngstrom": 1.32,
+      "neutralConfiguration": "[Ar].3d10.4s1",
+      "valenceElectrons": 11,
+      "firstIonizationEnergyEv": 7.72638,
+      "electronAffinityEv": 1.235784,
+      "chemicalHardnessEv": 3.245298,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.73
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.46
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.77
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.65
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.73
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "Low Spin",
+          "radiusAngstrom": 0.54
+        }
+      ]
+    },
+    "Zn": {
+      "atomicNumber": 30,
+      "name": "Zinc",
+      "electronegativityPauling": 1.65,
+      "covalentRadiusAngstrom": 1.22,
+      "neutralConfiguration": "[Ar].3d10.4s2",
+      "valenceElectrons": 12,
+      "firstIonizationEnergyEv": 9.394197,
+      "electronAffinityEv": -0.62,
+      "chemicalHardnessEv": 5.0070985,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.74
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.68
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.74
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.9
+        }
+      ]
+    },
+    "Ga": {
+      "atomicNumber": 31,
+      "name": "Gallium",
+      "electronegativityPauling": 1.81,
+      "covalentRadiusAngstrom": 1.22,
+      "neutralConfiguration": "[Ar].3d10.4s2.4p1",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 5.999302,
+      "electronAffinityEv": 0.30116615,
+      "chemicalHardnessEv": 2.849067925,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.62
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.47
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.55
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.62
+        }
+      ]
+    },
+    "Ge": {
+      "atomicNumber": 32,
+      "name": "Germanium",
+      "electronegativityPauling": 2.01,
+      "covalentRadiusAngstrom": 1.2,
+      "neutralConfiguration": "[Ar].3d10.4s2.4p2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 7.899435,
+      "electronAffinityEv": 1.232676413,
+      "chemicalHardnessEv": 3.3333792935,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.53
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.73
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.39
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.53
+        }
+      ]
+    },
+    "As": {
+      "atomicNumber": 33,
+      "name": "Arsenic",
+      "electronegativityPauling": 2.18,
+      "covalentRadiusAngstrom": 1.19,
+      "neutralConfiguration": "[Ar].3d10.4s2.4p3",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 9.78855,
+      "electronAffinityEv": 0.8044863,
+      "chemicalHardnessEv": 4.49203185,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.46
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.335
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.46
+        }
+      ]
+    },
+    "Se": {
+      "atomicNumber": 34,
+      "name": "Selenium",
+      "electronegativityPauling": 2.55,
+      "covalentRadiusAngstrom": 1.2,
+      "neutralConfiguration": "[Ar].3d10.4s2.4p4",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 9.752392,
+      "electronAffinityEv": 2.020604712,
+      "chemicalHardnessEv": 3.8658936440000002,
+      "referenceIon": {
+        "oxidationState": -2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.98
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.98
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.5
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.28
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.42
+        }
+      ]
+    },
+    "Br": {
+      "atomicNumber": 35,
+      "name": "Bromine",
+      "electronegativityPauling": 2.96,
+      "covalentRadiusAngstrom": 1.2,
+      "neutralConfiguration": "[Ar].3d10.4s2.4p5",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 11.81381,
+      "electronAffinityEv": 3.3635883,
+      "chemicalHardnessEv": 4.22511085,
+      "referenceIon": {
+        "oxidationState": -1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.96
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.96
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.59
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IIIPY",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.31
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.25
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.39
+        }
+      ]
+    },
+    "Kr": {
+      "atomicNumber": 36,
+      "name": "Krypton",
+      "electronegativityPauling": 3,
+      "covalentRadiusAngstrom": 1.16,
+      "neutralConfiguration": "[Ar].3d10.4s2.4p6",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 13.9996055,
+      "electronAffinityEv": -1.02,
+      "chemicalHardnessEv": 7.5098027499999995,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Rb": {
+      "atomicNumber": 37,
+      "name": "Rubidium",
+      "electronegativityPauling": 0.82,
+      "covalentRadiusAngstrom": 2.2,
+      "neutralConfiguration": "[Kr].5s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 4.1771281,
+      "electronAffinityEv": 0.48591621,
+      "chemicalHardnessEv": 1.845605945,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.52
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.52
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.56
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.61
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.63
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.66
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XI",
+          "coordinationNumber": 11,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.69
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.72
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XIV",
+          "coordinationNumber": 14,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.83
+        }
+      ]
+    },
+    "Sr": {
+      "atomicNumber": 38,
+      "name": "Strontium",
+      "electronegativityPauling": 0.95,
+      "covalentRadiusAngstrom": 1.95,
+      "neutralConfiguration": "[Kr].5s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 5.69486745,
+      "electronAffinityEv": 0.052066,
+      "chemicalHardnessEv": 2.821400725,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.18
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.18
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.21
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.26
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.31
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.36
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.44
+        }
+      ]
+    },
+    "Y": {
+      "atomicNumber": 39,
+      "name": "Yttrium",
+      "electronegativityPauling": 1.22,
+      "covalentRadiusAngstrom": 1.9,
+      "neutralConfiguration": "[Kr].4d1.5s2",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 6.21726,
+      "electronAffinityEv": 0.3112922,
+      "chemicalHardnessEv": 2.9529838999999996,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.9
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.9
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.019
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.075
+        }
+      ]
+    },
+    "Zr": {
+      "atomicNumber": 40,
+      "name": "Zirconium",
+      "electronegativityPauling": 1.33,
+      "covalentRadiusAngstrom": 1.75,
+      "neutralConfiguration": "[Kr].4d2.5s2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 6.634126,
+      "electronAffinityEv": 0.433289,
+      "chemicalHardnessEv": 3.1004185,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.72
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.59
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.66
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.72
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.78
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.84
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.89
+        }
+      ]
+    },
+    "Nb": {
+      "atomicNumber": 41,
+      "name": "Niobium",
+      "electronegativityPauling": 1.6,
+      "covalentRadiusAngstrom": 1.64,
+      "neutralConfiguration": "[Kr].4d4.5s1",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 6.75885,
+      "electronAffinityEv": 0.917407,
+      "chemicalHardnessEv": 2.9207215,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.64
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.72
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.68
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.79
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.48
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.64
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.69
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.74
+        }
+      ]
+    },
+    "Mo": {
+      "atomicNumber": 42,
+      "name": "Molybdenum",
+      "electronegativityPauling": 2.16,
+      "covalentRadiusAngstrom": 1.54,
+      "neutralConfiguration": "[Kr].4d5.5s1",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 7.09243,
+      "electronAffinityEv": 0.747238,
+      "chemicalHardnessEv": 3.172596,
+      "referenceIon": {
+        "oxidationState": 6,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.59
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.69
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.65
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.46
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.61
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.41
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.5
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.59
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.73
+        }
+      ]
+    },
+    "Tc": {
+      "atomicNumber": 43,
+      "name": "Technetium",
+      "electronegativityPauling": 1.9,
+      "covalentRadiusAngstrom": 1.47,
+      "neutralConfiguration": "[Kr].4d5.5s2",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 7.11938,
+      "electronAffinityEv": 0.552,
+      "chemicalHardnessEv": 3.28369,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.645
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.37
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.56
+        }
+      ]
+    },
+    "Ru": {
+      "atomicNumber": 44,
+      "name": "Ruthenium",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 1.46,
+      "neutralConfiguration": "[Kr].4d7.5s1",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 7.3605,
+      "electronAffinityEv": 1.046272,
+      "chemicalHardnessEv": 3.157114,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.62
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.68
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.62
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.565
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.38
+        },
+        {
+          "oxidationState": 8,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.36
+        }
+      ]
+    },
+    "Rh": {
+      "atomicNumber": 45,
+      "name": "Rhodium",
+      "electronegativityPauling": 2.28,
+      "covalentRadiusAngstrom": 1.42,
+      "neutralConfiguration": "[Kr].4d8.5s1",
+      "valenceElectrons": 9,
+      "firstIonizationEnergyEv": 7.4589,
+      "electronAffinityEv": 1.142892,
+      "chemicalHardnessEv": 3.158004,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.665
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.665
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.55
+        }
+      ]
+    },
+    "Pd": {
+      "atomicNumber": 46,
+      "name": "Palladium",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 1.39,
+      "neutralConfiguration": "[Kr].4d10",
+      "valenceElectrons": 10,
+      "firstIonizationEnergyEv": 8.336839,
+      "electronAffinityEv": 0.5621412,
+      "chemicalHardnessEv": 3.8873488999999997,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.86
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.59
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.64
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.86
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.615
+        }
+      ]
+    },
+    "Ag": {
+      "atomicNumber": 47,
+      "name": "Silver",
+      "electronegativityPauling": 1.93,
+      "covalentRadiusAngstrom": 1.45,
+      "neutralConfiguration": "[Kr].4d10.5s1",
+      "valenceElectrons": 11,
+      "firstIonizationEnergyEv": 7.576234,
+      "electronAffinityEv": 1.304473,
+      "chemicalHardnessEv": 3.1358805000000003,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.15
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.67
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.0
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.02
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.09
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.15
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.22
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.28
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.79
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.94
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.67
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.75
+        }
+      ]
+    },
+    "Cd": {
+      "atomicNumber": 48,
+      "name": "Cadmium",
+      "electronegativityPauling": 1.69,
+      "covalentRadiusAngstrom": 1.44,
+      "neutralConfiguration": "[Kr].4d10.5s2",
+      "valenceElectrons": 12,
+      "firstIonizationEnergyEv": 8.99382,
+      "electronAffinityEv": -0.72,
+      "chemicalHardnessEv": 4.85691,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.95
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.78
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.87
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.03
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.1
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.31
+        }
+      ]
+    },
+    "In": {
+      "atomicNumber": 49,
+      "name": "Indium",
+      "electronegativityPauling": 1.78,
+      "covalentRadiusAngstrom": 1.42,
+      "neutralConfiguration": "[Kr].4d10.5s2.5p1",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 5.7863557,
+      "electronAffinityEv": 0.299,
+      "chemicalHardnessEv": 2.7436778499999996,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.8
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.62
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.8
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.92
+        }
+      ]
+    },
+    "Sn": {
+      "atomicNumber": 50,
+      "name": "Tin",
+      "electronegativityPauling": 1.96,
+      "covalentRadiusAngstrom": 1.39,
+      "neutralConfiguration": "[Kr].4d10.5s2.5p2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 7.343918,
+      "electronAffinityEv": 1.1120702,
+      "chemicalHardnessEv": 3.1159239000000003,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.69
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.55
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.62
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.69
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.75
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.81
+        }
+      ]
+    },
+    "Sb": {
+      "atomicNumber": 51,
+      "name": "Antimony",
+      "electronegativityPauling": 2.05,
+      "covalentRadiusAngstrom": 1.39,
+      "neutralConfiguration": "[Kr].4d10.5s2.5p3",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 8.608389,
+      "electronAffinityEv": 1.04740119,
+      "chemicalHardnessEv": 3.780493905,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.6
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "IVPY",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.8
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        }
+      ]
+    },
+    "Te": {
+      "atomicNumber": 52,
+      "name": "Tellurium",
+      "electronegativityPauling": 2.1,
+      "covalentRadiusAngstrom": 1.38,
+      "neutralConfiguration": "[Kr].4d10.5s2.5p4",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 9.009808,
+      "electronAffinityEv": 1.9708757,
+      "chemicalHardnessEv": 3.51946615,
+      "referenceIon": {
+        "oxidationState": -2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 2.21
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 2.21
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.52
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.66
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.97
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.43
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.56
+        }
+      ]
+    },
+    "I": {
+      "atomicNumber": 53,
+      "name": "Iodine",
+      "electronegativityPauling": 2.66,
+      "covalentRadiusAngstrom": 1.39,
+      "neutralConfiguration": "[Kr].4d10.5s2.5p5",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 10.45126,
+      "electronAffinityEv": 3.059046537,
+      "chemicalHardnessEv": 3.6961067314999996,
+      "referenceIon": {
+        "oxidationState": -1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 2.2
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": -1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 2.2
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IIIPY",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.44
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.42
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.53
+        }
+      ]
+    },
+    "Xe": {
+      "atomicNumber": 54,
+      "name": "Xenon",
+      "electronegativityPauling": 2.6,
+      "covalentRadiusAngstrom": 1.4,
+      "neutralConfiguration": "[Kr].4d10.5s2.5p6",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 12.1298437,
+      "electronAffinityEv": -0.82,
+      "chemicalHardnessEv": 6.47492185,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 8,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.4
+        },
+        {
+          "oxidationState": 8,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.48
+        }
+      ]
+    },
+    "Cs": {
+      "atomicNumber": 55,
+      "name": "Cesium",
+      "electronegativityPauling": 0.79,
+      "covalentRadiusAngstrom": 2.44,
+      "neutralConfiguration": "[Xe].6s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 3.89390572743,
+      "electronAffinityEv": 0.471598338,
+      "chemicalHardnessEv": 1.711153694715,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.67
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.67
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.74
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.78
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.81
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XI",
+          "coordinationNumber": 11,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.85
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.88
+        }
+      ]
+    },
+    "Ba": {
+      "atomicNumber": 56,
+      "name": "Barium",
+      "electronegativityPauling": 0.89,
+      "covalentRadiusAngstrom": 2.15,
+      "neutralConfiguration": "[Xe].6s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 5.2116646,
+      "electronAffinityEv": 0.144626,
+      "chemicalHardnessEv": 2.5335193,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.35
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.35
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.38
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.42
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.47
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.52
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XI",
+          "coordinationNumber": 11,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.57
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.61
+        }
+      ]
+    },
+    "La": {
+      "atomicNumber": 57,
+      "name": "Lanthanum",
+      "electronegativityPauling": 1.1,
+      "covalentRadiusAngstrom": 2.07,
+      "neutralConfiguration": "[Xe].5d1.6s2",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 5.5769,
+      "electronAffinityEv": 0.5575462,
+      "chemicalHardnessEv": 2.5096769,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.032
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.032
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.1
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.16
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.216
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.27
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.36
+        }
+      ]
+    },
+    "Ce": {
+      "atomicNumber": 58,
+      "name": "Cerium",
+      "electronegativityPauling": 1.12,
+      "covalentRadiusAngstrom": 2.04,
+      "neutralConfiguration": "[Xe].4f1.5d1.6s2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 5.5386,
+      "electronAffinityEv": 0.60016027,
+      "chemicalHardnessEv": 2.469219865,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.87
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.01
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.07
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.143
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.196
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.25
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.34
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.87
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.97
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.07
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.14
+        }
+      ]
+    },
+    "Pr": {
+      "atomicNumber": 59,
+      "name": "Praseodymium",
+      "electronegativityPauling": 1.13,
+      "covalentRadiusAngstrom": 2.03,
+      "neutralConfiguration": "[Xe].4f3.6s2",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 5.4702,
+      "electronAffinityEv": 0.1092346,
+      "chemicalHardnessEv": 2.6804827,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.99
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.99
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.126
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.179
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.85
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        }
+      ]
+    },
+    "Nd": {
+      "atomicNumber": 60,
+      "name": "Neodymium",
+      "electronegativityPauling": 1.14,
+      "covalentRadiusAngstrom": 2.01,
+      "neutralConfiguration": "[Xe].4f4.6s2",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 5.525,
+      "electronAffinityEv": 0.0974933,
+      "chemicalHardnessEv": 2.71375335,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.983
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.29
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.35
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.983
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.109
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.163
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.27
+        }
+      ]
+    },
+    "Pm": {
+      "atomicNumber": 61,
+      "name": "Promethium",
+      "electronegativityPauling": 1.13,
+      "covalentRadiusAngstrom": 1.99,
+      "neutralConfiguration": "[Xe].4f5.6s2",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 5.58187,
+      "electronAffinityEv": 0.129,
+      "chemicalHardnessEv": 2.7264350000000004,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.97
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.97
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.093
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.144
+        }
+      ]
+    },
+    "Sm": {
+      "atomicNumber": 62,
+      "name": "Samarium",
+      "electronegativityPauling": 1.17,
+      "covalentRadiusAngstrom": 1.98,
+      "neutralConfiguration": "[Xe].4f6.6s2",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 5.64371,
+      "electronAffinityEv": 0.162,
+      "chemicalHardnessEv": 2.740855,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.958
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.22
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.27
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.32
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.958
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.02
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.079
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.132
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.24
+        }
+      ]
+    },
+    "Eu": {
+      "atomicNumber": 63,
+      "name": "Europium",
+      "electronegativityPauling": 1.2,
+      "covalentRadiusAngstrom": 1.98,
+      "neutralConfiguration": "[Xe].4f7.6s2",
+      "valenceElectrons": 9,
+      "firstIonizationEnergyEv": 5.670385,
+      "electronAffinityEv": 0.11613,
+      "chemicalHardnessEv": 2.7771274999999997,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.947
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.17
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.2
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.25
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.3
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.35
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.947
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.066
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.12
+        }
+      ]
+    },
+    "Gd": {
+      "atomicNumber": 64,
+      "name": "Gadolinium",
+      "electronegativityPauling": 1.2,
+      "covalentRadiusAngstrom": 1.96,
+      "neutralConfiguration": "[Xe].4f7.5d1.6s2",
+      "valenceElectrons": 10,
+      "firstIonizationEnergyEv": 6.1498,
+      "electronAffinityEv": 0.2123,
+      "chemicalHardnessEv": 2.96875,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.938
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.938
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.0
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.053
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.107
+        }
+      ]
+    },
+    "Tb": {
+      "atomicNumber": 65,
+      "name": "Terbium",
+      "electronegativityPauling": 1.1,
+      "covalentRadiusAngstrom": 1.94,
+      "neutralConfiguration": "[Xe].4f9.6s2",
+      "valenceElectrons": 11,
+      "firstIonizationEnergyEv": 5.8638,
+      "electronAffinityEv": 0.131318,
+      "chemicalHardnessEv": 2.866241,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.923
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.923
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.98
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.04
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.095
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.88
+        }
+      ]
+    },
+    "Dy": {
+      "atomicNumber": 66,
+      "name": "Dysprosium",
+      "electronegativityPauling": 1.22,
+      "covalentRadiusAngstrom": 1.92,
+      "neutralConfiguration": "[Xe].4f10.6s2",
+      "valenceElectrons": 12,
+      "firstIonizationEnergyEv": 5.93905,
+      "electronAffinityEv": 0.0153,
+      "chemicalHardnessEv": 2.961875,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.912
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.07
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.13
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.19
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.912
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.97
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.027
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.083
+        }
+      ]
+    },
+    "Ho": {
+      "atomicNumber": 67,
+      "name": "Holmium",
+      "electronegativityPauling": 1.23,
+      "covalentRadiusAngstrom": 1.92,
+      "neutralConfiguration": "[Xe].4f11.6s2",
+      "valenceElectrons": 13,
+      "firstIonizationEnergyEv": 6.0215,
+      "electronAffinityEv": 0.338,
+      "chemicalHardnessEv": 2.8417499999999998,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.901
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.901
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.015
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.072
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.12
+        }
+      ]
+    },
+    "Er": {
+      "atomicNumber": 68,
+      "name": "Erbium",
+      "electronegativityPauling": 1.24,
+      "covalentRadiusAngstrom": 1.89,
+      "neutralConfiguration": "[Xe].4f12.6s2",
+      "valenceElectrons": 14,
+      "firstIonizationEnergyEv": 6.1077,
+      "electronAffinityEv": 0.312,
+      "chemicalHardnessEv": 2.89785,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.89
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.89
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.945
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.004
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.062
+        }
+      ]
+    },
+    "Tm": {
+      "atomicNumber": 69,
+      "name": "Thulium",
+      "electronegativityPauling": 1.25,
+      "covalentRadiusAngstrom": 1.9,
+      "neutralConfiguration": "[Xe].4f13.6s2",
+      "valenceElectrons": 15,
+      "firstIonizationEnergyEv": 6.18431,
+      "electronAffinityEv": 1.02922,
+      "chemicalHardnessEv": 2.5775449999999998,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.88
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.03
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.09
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.88
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.994
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.052
+        }
+      ]
+    },
+    "Yb": {
+      "atomicNumber": 70,
+      "name": "Ytterbium",
+      "electronegativityPauling": 1.1,
+      "covalentRadiusAngstrom": 1.87,
+      "neutralConfiguration": "[Xe].4f14.6s2",
+      "valenceElectrons": 16,
+      "firstIonizationEnergyEv": 6.25416,
+      "electronAffinityEv": -0.02,
+      "chemicalHardnessEv": 3.1370799999999996,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.868
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.02
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.08
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.14
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.868
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.925
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.985
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.042
+        }
+      ]
+    },
+    "Lu": {
+      "atomicNumber": 71,
+      "name": "Lutetium",
+      "electronegativityPauling": 1.27,
+      "covalentRadiusAngstrom": 1.87,
+      "neutralConfiguration": "[Xe].4f14.5d1.6s2",
+      "valenceElectrons": 17,
+      "firstIonizationEnergyEv": 5.425871,
+      "electronAffinityEv": 0.23887,
+      "chemicalHardnessEv": 2.5935004999999998,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.861
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.861
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.977
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.032
+        }
+      ]
+    },
+    "Hf": {
+      "atomicNumber": 72,
+      "name": "Hafnium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": 1.75,
+      "neutralConfiguration": "[Xe].4f14.5d2.6s2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 6.82507,
+      "electronAffinityEv": 0.17807,
+      "chemicalHardnessEv": 3.3235,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.71
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.71
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.83
+        }
+      ]
+    },
+    "Ta": {
+      "atomicNumber": 73,
+      "name": "Tantalum",
+      "electronegativityPauling": 1.5,
+      "covalentRadiusAngstrom": 1.7,
+      "neutralConfiguration": "[Xe].4f14.5d3.6s2",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 7.549571,
+      "electronAffinityEv": 0.32885923,
+      "chemicalHardnessEv": 3.610355885,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.64
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.72
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.68
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.64
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.69
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.74
+        }
+      ]
+    },
+    "W": {
+      "atomicNumber": 74,
+      "name": "Tungsten",
+      "electronegativityPauling": 2.36,
+      "covalentRadiusAngstrom": 1.62,
+      "neutralConfiguration": "[Xe].4f14.5d4.6s2",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 7.86403,
+      "electronAffinityEv": 0.81650082,
+      "chemicalHardnessEv": 3.52376459,
+      "referenceIon": {
+        "oxidationState": 6,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.6
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.66
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.62
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.42
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.51
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        }
+      ]
+    },
+    "Re": {
+      "atomicNumber": 75,
+      "name": "Rhenium",
+      "electronegativityPauling": 1.9,
+      "covalentRadiusAngstrom": 1.51,
+      "neutralConfiguration": "[Xe].4f14.5d5.6s2",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 7.83352,
+      "electronAffinityEv": 0.06039664,
+      "chemicalHardnessEv": 3.88656168,
+      "referenceIon": {
+        "oxidationState": 7,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.53
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.63
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.58
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.55
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.38
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.53
+        }
+      ]
+    },
+    "Os": {
+      "atomicNumber": 76,
+      "name": "Osmium",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 1.44,
+      "neutralConfiguration": "[Xe].4f14.5d6.6s2",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 8.43823,
+      "electronAffinityEv": 1.07766124,
+      "chemicalHardnessEv": 3.6802843800000002,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.63
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.63
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.575
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.49
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.545
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.525
+        },
+        {
+          "oxidationState": 8,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.39
+        }
+      ]
+    },
+    "Ir": {
+      "atomicNumber": 77,
+      "name": "Iridium",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 1.41,
+      "neutralConfiguration": "[Xe].4f14.5d7.6s2",
+      "valenceElectrons": 9,
+      "firstIonizationEnergyEv": 8.96702,
+      "electronAffinityEv": 1.56405712,
+      "chemicalHardnessEv": 3.70148144,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.625
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.68
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.625
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        }
+      ]
+    },
+    "Pt": {
+      "atomicNumber": 78,
+      "name": "Platinum",
+      "electronegativityPauling": 2.28,
+      "covalentRadiusAngstrom": 1.36,
+      "neutralConfiguration": "[Xe].4f14.5d9.6s1",
+      "valenceElectrons": 10,
+      "firstIonizationEnergyEv": 8.95883,
+      "electronAffinityEv": 2.125105,
+      "chemicalHardnessEv": 3.4168625000000006,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.625
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.6
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.8
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.625
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        }
+      ]
+    },
+    "Au": {
+      "atomicNumber": 79,
+      "name": "Gold",
+      "electronegativityPauling": 2.54,
+      "covalentRadiusAngstrom": 1.36,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s1",
+      "valenceElectrons": 11,
+      "firstIonizationEnergyEv": 9.225554,
+      "electronAffinityEv": 2.30861025,
+      "chemicalHardnessEv": 3.4584718750000003,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.85
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.37
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IVSQ",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.68
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.85
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.57
+        }
+      ]
+    },
+    "Hg": {
+      "atomicNumber": 80,
+      "name": "Mercury",
+      "electronegativityPauling": 2,
+      "covalentRadiusAngstrom": 1.32,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2",
+      "valenceElectrons": 12,
+      "firstIonizationEnergyEv": 10.437504,
+      "electronAffinityEv": -0.52,
+      "chemicalHardnessEv": 5.478752,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.02
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "III",
+          "coordinationNumber": 3,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.97
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.19
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.69
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.02
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.14
+        }
+      ]
+    },
+    "Tl": {
+      "atomicNumber": 81,
+      "name": "Thallium",
+      "electronegativityPauling": 1.62,
+      "covalentRadiusAngstrom": 1.45,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2.6p1",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 6.1082873,
+      "electronAffinityEv": 0.32005319,
+      "chemicalHardnessEv": 2.8941170549999997,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.885
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.5
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.59
+        },
+        {
+          "oxidationState": 1,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.7
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.75
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.885
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.98
+        }
+      ]
+    },
+    "Pb": {
+      "atomicNumber": 82,
+      "name": "Lead",
+      "electronegativityPauling": 2.33,
+      "covalentRadiusAngstrom": 1.46,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2.6p2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 7.4166799,
+      "electronAffinityEv": 0.3567212,
+      "chemicalHardnessEv": 3.52997935,
+      "referenceIon": {
+        "oxidationState": 2,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.19
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "IVPY",
+          "coordinationNumber": null,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.98
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.19
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.23
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.29
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.35
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.4
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XI",
+          "coordinationNumber": 11,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.45
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.49
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.65
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.73
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.775
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.94
+        }
+      ]
+    },
+    "Bi": {
+      "atomicNumber": 83,
+      "name": "Bismuth",
+      "electronegativityPauling": 2.02,
+      "covalentRadiusAngstrom": 1.48,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2.6p3",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 7.285516,
+      "electronAffinityEv": 0.94236213,
+      "chemicalHardnessEv": 3.171576935,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.03
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "V",
+          "coordinationNumber": 5,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.03
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.17
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        }
+      ]
+    },
+    "Po": {
+      "atomicNumber": 84,
+      "name": "Polonium",
+      "electronegativityPauling": 2,
+      "covalentRadiusAngstrom": 1.4,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2.6p4",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 8.41807,
+      "electronAffinityEv": 1.407,
+      "chemicalHardnessEv": 3.505535,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.94
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.08
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.67
+        }
+      ]
+    },
+    "At": {
+      "atomicNumber": 85,
+      "name": "Astatine",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 1.5,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2.6p5",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 9.31751,
+      "electronAffinityEv": 2.415787,
+      "chemicalHardnessEv": 3.4508615000000002,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.62
+        }
+      ]
+    },
+    "Rn": {
+      "atomicNumber": 86,
+      "name": "Radon",
+      "electronegativityPauling": 2.2,
+      "covalentRadiusAngstrom": 1.5,
+      "neutralConfiguration": "[Xe].4f14.5d10.6s2.6p6",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 10.7485,
+      "electronAffinityEv": -0.72,
+      "chemicalHardnessEv": 5.73425,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Fr": {
+      "atomicNumber": 87,
+      "name": "Francium",
+      "electronegativityPauling": 0.7,
+      "covalentRadiusAngstrom": 2.6,
+      "neutralConfiguration": "[Rn].7s1",
+      "valenceElectrons": 1,
+      "firstIonizationEnergyEv": 4.0727411,
+      "electronAffinityEv": 0.486,
+      "chemicalHardnessEv": 1.7933705500000001,
+      "referenceIon": {
+        "oxidationState": 1,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.8
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 1,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.8
+        }
+      ]
+    },
+    "Ra": {
+      "atomicNumber": 88,
+      "name": "Radium",
+      "electronegativityPauling": 0.9,
+      "covalentRadiusAngstrom": 2.21,
+      "neutralConfiguration": "[Rn].7s2",
+      "valenceElectrons": 2,
+      "firstIonizationEnergyEv": 5.2784239,
+      "electronAffinityEv": 0.1,
+      "chemicalHardnessEv": 2.58921195,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.48
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.7
+        }
+      ]
+    },
+    "Ac": {
+      "atomicNumber": 89,
+      "name": "Actinium",
+      "electronegativityPauling": 1.1,
+      "covalentRadiusAngstrom": 2.15,
+      "neutralConfiguration": "[Rn].6d1.7s2",
+      "valenceElectrons": 3,
+      "firstIonizationEnergyEv": 5.380226,
+      "electronAffinityEv": 0.35,
+      "chemicalHardnessEv": 2.5151130000000004,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 1.12
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.12
+        }
+      ]
+    },
+    "Th": {
+      "atomicNumber": 90,
+      "name": "Thorium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": 2.06,
+      "neutralConfiguration": "[Rn].6d2.7s2",
+      "valenceElectrons": 4,
+      "firstIonizationEnergyEv": 6.3067,
+      "electronAffinityEv": 0.607696,
+      "chemicalHardnessEv": 2.849502,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.94
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.94
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.05
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.09
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "X",
+          "coordinationNumber": 10,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.13
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "XI",
+          "coordinationNumber": 11,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.18
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.21
+        }
+      ]
+    },
+    "Pa": {
+      "atomicNumber": 91,
+      "name": "Protactinium",
+      "electronegativityPauling": 1.5,
+      "covalentRadiusAngstrom": 2.0,
+      "neutralConfiguration": "[Rn].5f2.6d1.7s2",
+      "valenceElectrons": 5,
+      "firstIonizationEnergyEv": 5.89,
+      "electronAffinityEv": 0.55,
+      "chemicalHardnessEv": 2.67,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.78
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.04
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.9
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.01
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.78
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.91
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        }
+      ]
+    },
+    "U": {
+      "atomicNumber": 92,
+      "name": "Uranium",
+      "electronegativityPauling": 1.38,
+      "covalentRadiusAngstrom": 1.96,
+      "neutralConfiguration": "[Rn].5f3.6d1.7s2",
+      "valenceElectrons": 6,
+      "firstIonizationEnergyEv": 6.19405,
+      "electronAffinityEv": 0.314979,
+      "chemicalHardnessEv": 2.9395355,
+      "referenceIon": {
+        "oxidationState": 6,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.73
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.025
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.89
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.0
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.05
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "XII",
+          "coordinationNumber": 12,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.17
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.76
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.84
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "II",
+          "coordinationNumber": 2,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.45
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "IV",
+          "coordinationNumber": 4,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.52
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.73
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.81
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.86
+        }
+      ]
+    },
+    "Np": {
+      "atomicNumber": 93,
+      "name": "Neptunium",
+      "electronegativityPauling": 1.36,
+      "covalentRadiusAngstrom": 1.9,
+      "neutralConfiguration": "[Rn].5f4.6d1.7s2",
+      "valenceElectrons": 7,
+      "firstIonizationEnergyEv": 6.26554,
+      "electronAffinityEv": 0.48,
+      "chemicalHardnessEv": 2.8927699999999996,
+      "referenceIon": {
+        "oxidationState": 5,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.75
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.1
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.01
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.87
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.98
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.75
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.72
+        },
+        {
+          "oxidationState": 7,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.71
+        }
+      ]
+    },
+    "Pu": {
+      "atomicNumber": 94,
+      "name": "Plutonium",
+      "electronegativityPauling": 1.28,
+      "covalentRadiusAngstrom": 1.87,
+      "neutralConfiguration": "[Rn].5f6.7s2",
+      "valenceElectrons": 8,
+      "firstIonizationEnergyEv": 6.02576,
+      "electronAffinityEv": -0.5,
+      "chemicalHardnessEv": 3.26288,
+      "referenceIon": {
+        "oxidationState": 4,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.86
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.0
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.86
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        },
+        {
+          "oxidationState": 5,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.74
+        },
+        {
+          "oxidationState": 6,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.71
+        }
+      ]
+    },
+    "Am": {
+      "atomicNumber": 95,
+      "name": "Americium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": 1.8,
+      "neutralConfiguration": "[Rn].5f7.7s2",
+      "valenceElectrons": 9,
+      "firstIonizationEnergyEv": 5.97381,
+      "electronAffinityEv": 0.1,
+      "chemicalHardnessEv": 2.9369050000000003,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.975
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VII",
+          "coordinationNumber": 7,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.21
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.26
+        },
+        {
+          "oxidationState": 2,
+          "coordination": "IX",
+          "coordinationNumber": 9,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.31
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.975
+        },
+        {
+          "oxidationState": 3,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.09
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.85
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        }
+      ]
+    },
+    "Cm": {
+      "atomicNumber": 96,
+      "name": "Curium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": 1.69,
+      "neutralConfiguration": "[Rn].5f7.6d1.7s2",
+      "valenceElectrons": 10,
+      "firstIonizationEnergyEv": 5.99141,
+      "electronAffinityEv": 0.28,
+      "chemicalHardnessEv": 2.855705,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.97
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.97
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.85
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        }
+      ]
+    },
+    "Bk": {
+      "atomicNumber": 97,
+      "name": "Berkelium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f9.7s2",
+      "valenceElectrons": 11,
+      "firstIonizationEnergyEv": 6.19785,
+      "electronAffinityEv": -1.72,
+      "chemicalHardnessEv": 3.958925,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.96
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.96
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.83
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.93
+        }
+      ]
+    },
+    "Cf": {
+      "atomicNumber": 98,
+      "name": "Californium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f10.7s2",
+      "valenceElectrons": 12,
+      "firstIonizationEnergyEv": 6.28166,
+      "electronAffinityEv": -1.01,
+      "chemicalHardnessEv": 3.6458299999999997,
+      "referenceIon": {
+        "oxidationState": 3,
+        "coordination": "VI",
+        "coordinationNumber": 6,
+        "spin": "unspecified",
+        "radiusAngstrom": 0.95
+      },
+      "ionicRadii": [
+        {
+          "oxidationState": 3,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.95
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.821
+        },
+        {
+          "oxidationState": 4,
+          "coordination": "VIII",
+          "coordinationNumber": 8,
+          "spin": "unspecified",
+          "radiusAngstrom": 0.92
+        }
+      ]
+    },
+    "Es": {
+      "atomicNumber": 99,
+      "name": "Einsteinium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f11.7s2",
+      "valenceElectrons": 13,
+      "firstIonizationEnergyEv": 6.36758,
+      "electronAffinityEv": -0.3,
+      "chemicalHardnessEv": 3.33379,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Fm": {
+      "atomicNumber": 100,
+      "name": "Fermium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f12.7s2",
+      "valenceElectrons": 14,
+      "firstIonizationEnergyEv": 6.5,
+      "electronAffinityEv": 0.35,
+      "chemicalHardnessEv": 3.075,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Md": {
+      "atomicNumber": 101,
+      "name": "Mendelevium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f13.7s2",
+      "valenceElectrons": 15,
+      "firstIonizationEnergyEv": 6.58,
+      "electronAffinityEv": 0.98,
+      "chemicalHardnessEv": 2.8,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "No": {
+      "atomicNumber": 102,
+      "name": "Nobelium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f14.7s2",
+      "valenceElectrons": 16,
+      "firstIonizationEnergyEv": 6.62621,
+      "electronAffinityEv": -2.33,
+      "chemicalHardnessEv": 4.478105,
+      "referenceIon": null,
+      "ionicRadii": [
+        {
+          "oxidationState": 2,
+          "coordination": "VI",
+          "coordinationNumber": 6,
+          "spin": "unspecified",
+          "radiusAngstrom": 1.1
+        }
+      ]
+    },
+    "Lr": {
+      "atomicNumber": 103,
+      "name": "Lawrencium",
+      "electronegativityPauling": 1.3,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": "[Rn].5f14.7s2.7p1",
+      "valenceElectrons": 17,
+      "firstIonizationEnergyEv": 4.96,
+      "electronAffinityEv": -0.31,
+      "chemicalHardnessEv": 2.635,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Rf": {
+      "atomicNumber": 104,
+      "name": "Rutherfordium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 6.02,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Db": {
+      "atomicNumber": 105,
+      "name": "Dubnium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 6.8,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Sg": {
+      "atomicNumber": 106,
+      "name": "Seaborgium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 7.8,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Bh": {
+      "atomicNumber": 107,
+      "name": "Bohrium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 7.7,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Hs": {
+      "atomicNumber": 108,
+      "name": "Hassium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 7.6,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Mt": {
+      "atomicNumber": 109,
+      "name": "Meitnerium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 50.0,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Ds": {
+      "atomicNumber": 110,
+      "name": "Darmstadtium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": 65.0,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Rg": {
+      "atomicNumber": 111,
+      "name": "Roentgenium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": 1.565,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Cn": {
+      "atomicNumber": 112,
+      "name": "Copernicium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Nh": {
+      "atomicNumber": 113,
+      "name": "Nihonium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": 0.69,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Fl": {
+      "atomicNumber": 114,
+      "name": "Flerovium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": null,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Mc": {
+      "atomicNumber": 115,
+      "name": "Moscovium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": 0.366,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Lv": {
+      "atomicNumber": 116,
+      "name": "Livermorium",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": 0.776,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Ts": {
+      "atomicNumber": 117,
+      "name": "Tennessine",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": 1.719,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    },
+    "Og": {
+      "atomicNumber": 118,
+      "name": "Oganesson",
+      "electronegativityPauling": null,
+      "covalentRadiusAngstrom": null,
+      "neutralConfiguration": null,
+      "valenceElectrons": null,
+      "firstIonizationEnergyEv": null,
+      "electronAffinityEv": 0.0806,
+      "chemicalHardnessEv": null,
+      "referenceIon": null,
+      "ionicRadii": []
+    }
+  }
+}

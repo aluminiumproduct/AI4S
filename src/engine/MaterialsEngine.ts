@@ -1,6 +1,14 @@
 import axios from "axios";
 import { Material } from "../types";
 import type { MPData } from "../services/MaterialsProjectService";
+import { extractCompositionFeatures } from "./CompositionFeatures";
+import { createSeededRandom } from "./SeededRandom";
+
+function formulaCost(composition: Record<string, number>) {
+  const count = Object.values(composition).reduce((sum, amount) => sum + amount, 0);
+  if (!Number.isFinite(count)) throw new RangeError("Invalid formula size");
+  return 1 + count * 0.2; // Formula-size proxy, not measured DFT hours.
+}
 
 /**
  * Real Materials Engine interfacing with Materials Project.
@@ -18,30 +26,6 @@ export class MaterialsEngine {
     this.isRealData = isRealData;
   }
 
-  /**
-   * Enhanced featurizer including structural descriptors.
-   * 1-8: Atomic fractions
-   * 9: Electronegativity Difference (Simulated)
-   * 10: Lattice Distortion (Simulated)
-   * 11: Coordination Number (Simulated)
-   */
-  private featurize(mpData: MPData): number[] {
-    const elements = ["Li", "O", "P", "S", "Ge", "Sn", "La", "Zr"];
-    const features = new Array(elements.length + 3).fill(0);
-    
-    const totalAtoms = Object.values(mpData.composition).reduce((a: number, b: number) => a + b, 0);
-    elements.forEach((el, i) => {
-      features[i] = (mpData.composition[el] || 0) / totalAtoms;
-    });
-
-    // Simulated Structural Descriptors (in real life, these would come from MP or matminer)
-    features[elements.length] = Math.random(); // Electronegativity Difference
-    features[elements.length + 1] = Math.random(); // Lattice Distortion
-    features[elements.length + 2] = Math.floor(Math.random() * 6) + 4; // Coordination Number
-
-    return features;
-  }
-
   async loadRealData(limit: number = 150): Promise<boolean> {
     if (!Number.isSafeInteger(limit) || limit < 0) {
       throw new RangeError("Material count must be a non-negative integer");
@@ -52,18 +36,18 @@ export class MaterialsEngine {
       const data: MPData[] = response.data.data;
       
       const pool = data.map(m => {
-        const features = this.featurize(m);
-        // Cost is proportional to the number of atoms (simulating DFT complexity)
-        const totalAtoms = Object.values(m.composition).reduce((a, b) => a + b, 0);
-        const cost = 1 + (totalAtoms * 0.2) + (features[features.length - 1] * 0.1); 
+        const { features, descriptors } = extractCompositionFeatures(m.composition);
+        if (!Number.isFinite(m.band_gap)) throw new RangeError("Invalid band gap");
 
         return {
           id: m.material_id,
           formula: m.formula_pretty,
           composition: m.composition,
           features,
+          descriptors,
+          targetKind: "band-gap" as const,
           trueProperty: m.band_gap, 
-          cost,
+          cost: formulaCost(m.composition),
           isSampled: false,
         };
       });
@@ -82,40 +66,40 @@ export class MaterialsEngine {
 
   private generateMockPool(size: number): Material[] {
     const pool: Material[] = [];
+    const random = createSeededRandom(0x4d4f434b);
     const elements = ["Li", "La", "Zr", "O", "P", "S", "Ge", "Sn"];
+    const examples: Record<string, number>[] = [
+      { Li: 2, O: 1 }, { Sr: 1, Ti: 1, O: 3 }, { Ba: 1, Zr: 1, O: 3 },
+      { Li: 3, P: 1, O: 4 }, { Li: 7, La: 3, Zr: 2, O: 12 },
+    ];
     for (let i = 0; i < size; i++) {
-      const composition: Record<string, number> = {};
-      const numElements = 2 + Math.floor(Math.random() * 3);
-      const selected = [...elements].sort(() => 0.5 - Math.random()).slice(0, numElements);
-      selected.forEach(el => { composition[el] = Math.floor(Math.random() * 5) + 1; });
+      const composition: Record<string, number> = { ...examples[i] };
+      if (i >= examples.length) {
+        const selected = [...elements];
+        for (let j = selected.length - 1; j > 0; j--) {
+          const k = Math.floor(random() * (j + 1));
+          [selected[j], selected[k]] = [selected[k], selected[j]];
+        }
+        const count = 2 + Math.floor(random() * 3);
+        selected.slice(0, count).forEach(symbol => { composition[symbol] = 1 + Math.floor(random() * 5); });
+      }
       const formula = Object.entries(composition).map(([el, count]) => `${el}${count > 1 ? count : ""}`).join("");
-      
-      // Generate 2 polymorphs for each composition to demonstrate structural sensitivity
+      const { features, descriptors } = extractCompositionFeatures(composition);
+      // Synthetic, deterministic demonstration score, not a physical band gap.
+      const stats = descriptors.statistics;
+      const syntheticScore = (stats.electronegativityPauling.variance ?? 0)
+        + 0.05 * (stats.chemicalHardnessEv.mean ?? 0) + 0.02 * (stats.valenceElectrons.mean ?? 0);
+      // Keep two records per composition, labelled replicas rather than invented polymorphs.
       for (let p = 0; p < 2; p++) {
-        const structuralFeatures = [
-          Math.random(), // Electronegativity Diff
-          Math.random(), // Lattice Distortion
-          Math.floor(Math.random() * 6) + 4 // Coordination Number
-        ];
-        
-        const compositionFeatures = elements.map(el => (composition[el] || 0) / 10);
-        const features = [...compositionFeatures, ...structuralFeatures];
-        
-        const liContent = composition["Li"] || 0;
-        // Performance depends on both Li content AND structural features
-        // e.g. Lattice distortion (features[9]) and Coordination (features[10])
-        const trueProperty = (liContent * 0.5) + (features[9] * 2) + (features[10] * 0.1) + Math.random();
-        
-        const totalAtoms = Object.values(composition).reduce((a, b) => a + b, 0);
-        const cost = 1 + (totalAtoms * 0.3) + (p * 0.5); // Polymorph 2 might be more complex
-
         pool.push({
           id: `mock-${i}-${p}`, 
-          formula: p === 1 ? `${formula} (β)` : formula, 
+          formula: p === 1 ? `${formula} (replica)` : formula,
           composition, 
-          features, 
-          trueProperty, 
-          cost,
+          features: [...features],
+          descriptors,
+          targetKind: "synthetic-score",
+          trueProperty: syntheticScore,
+          cost: formulaCost(composition),
           isSampled: false 
         });
       }

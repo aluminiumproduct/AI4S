@@ -1,4 +1,5 @@
 import { Material } from "../types";
+import { createSeededRandom } from "./SeededRandom";
 
 /**
  * Simple Surrogate Model using Random Forest-like uncertainty (Ensemble of Linear Regressions for demo)
@@ -17,11 +18,12 @@ export class SurrogateModel {
 
     this.weights = [];
     this.bias = [];
+    const random = createSeededRandom(0x53555252);
 
     // Train ensemble
     for (let i = 0; i < this.ensembleSize; i++) {
       // Bootstrap sampling
-      const indices = Array.from({ length: X.length }, () => Math.floor(Math.random() * X.length));
+      const indices = Array.from({ length: X.length }, () => Math.floor(random() * X.length));
       const subX = indices.map(idx => X[idx]);
       const subY = indices.map(idx => y[idx]);
 
