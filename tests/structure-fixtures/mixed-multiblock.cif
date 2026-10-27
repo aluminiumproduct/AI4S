@@ -1,0 +1,37 @@
+data_metadata
+_chemical_name_common 'Metadata without atom sites'
+
+data_mixed
+_cell_length_a 3
+_cell_length_b 3
+_cell_length_c 3
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_space_group_IT_number 1
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+Fe1 Fe 0 0 0 0.5
+Co1 Co 0 0 0 0.5
+
+data_partial
+_cell_length_a 2
+_cell_length_b 2
+_cell_length_c 2
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+_space_group_IT_number 1
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+O1 O 0.2 0.3 0.4 0.25

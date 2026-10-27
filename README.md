@@ -16,6 +16,8 @@
 - **多保真特征表示**：13 维材料描述符（10 维成分 + 3 维结构基元），支持同质异构体（polymorph）区分。
 - **双语交互界面**：中英文一键切换，内置系统文档、性能基准（Benchmark）与研究方法论说明。
 - **双主题皮肤**：经典模式 / 科研蓝模式。
+- **结构导入与 3D 查看**：在浏览器本地导入 CIF / POSCAR / CONTCAR，检查晶胞、元素占位、周期复制及位点距离；不需要 uMLIP 或 API 密钥。
+- **推荐材料结构查看**：点击推荐材料行或化学式，按 Materials Project 材料 ID 获取真实晶胞并缓存；Mock 明确显示“暂无结构”。数据库结构获取需要已有的 `MP_API_KEY`。
 - **本地大模型接入**：通过兼容 OpenAI 协议的代理接口，可配置 DeepSeek / Kimi 等模型作为 AI 对话后端。
 
 ---
@@ -45,7 +47,11 @@ AI4S/
 │   ├── main.tsx                       # React 挂载
 │   ├── types.ts                       # 材料 / AL 状态类型与默认配置
 │   ├── components/
-│   │   └── BenchmarkSimulator.tsx     # 基准测试弹窗组件
+│   │   ├── BenchmarkSimulator.tsx     # 基准测试弹窗组件
+│   │   ├── StructurePanel.tsx         # 按需加载与独立错误边界
+│   │   ├── StructureWorkspace.tsx     # 本地导入、结构元数据、位点与测距
+│   │   └── StructureViewer.tsx        # Three.js 原子、晶胞与几何邻接线
+│   ├── structures/                    # 结构类型、Worker、CIF/POSCAR 归一化和周期几何
 │   ├── engine/
 │   │   ├── ActiveLearningLoop.ts         # 有界单轮采样、预算与停止原因
 │   │   ├── MaterialsEngine.ts         # 数据加载与特征工程
@@ -156,6 +162,28 @@ AL_CONFIG = {
 
 ---
 
+## 结构导入与 3D 查看
+
+点击页头“结构导入 / 3D”，选择或拖入文件，也可以粘贴文本。查看器提供明确标记的理想 SrTiO3 / NaCl 演示结构，支持旋转、缩放、平移、复位视角、晶胞边框、1×1×1 / 2×2×2 显示、原子选择和两点测距。位点表可以搜索；多数据块 CIF 可以选择要显示的数据块。
+
+- 文件在本地 Web Worker 内解析，不发送到服务端、材料数据库或大模型。保留文件原文、来源文件名、CIF 数据块和占位信息；关闭窗口后保留当前页面会话，刷新页面会清空。
+- CIF 1.1：支持常见晶格参数、分数或 Cartesian 坐标、括号不确定度、显式现代/旧式对称操作、特殊位置去重和混占。Cartesian 坐标支持显式变换矩阵和平移；缺少矩阵时采用标准晶胞轴向并提示。对称操作须保持晶格度量。同元素部分占位的等价重叠存在歧义时拒绝自动累加。未提供操作且不能确认为 P1 时，仅显示已列位点并提示未完成对称重建；空间群仅展示文件声明，未进行识别。
+- POSCAR / CONTCAR：支持带元素行的 VASP 5 格式、Direct / Cartesian / K 模式、正标量缩放、负体积缩放、三个正 Cartesian 分量缩放和 Selective dynamics。保留 T/F；不读取速度与预测校正附加段。缺元素的 VASP 4 文件不会从标题猜测元素。
+- “几何邻接线”只是当前显示坐标的距离截断，不等同于化学键或配位判定；默认截断可调整，最多显示 8000 条。测距同时显示所选周期映像间的直接距离和基于原晶格的最小周期距离，后者包含三斜晶胞处理。
+- 当前限制：5 MB、最多 5000 个展开/显示位点、单次解析 10 秒；大于 1200 个显示位点时关闭邻接线。暂不支持 CIF 2.0 和 save frames。对于缺失数值、无效晶胞或无法可靠解释的占位，会提示错误并保留上一份有效结构。
+
+结构使用独立的 `CrystalStructure` 类型，不生成 `trueProperty`，不进入现有主动学习训练池，也不自动替换原来的模拟特征。此版本只完成结构输入和查看，不包含 uMLIP、结构优化、带隙计算或掺杂前后比较。
+
+渲染使用 Three.js（按需加载），CIF 词法/语法读取使用 `crystcif-parse` 的纯解析入口；晶格归一化、对称操作校验、占位处理和周期几何在项目的 `src/structures/` 中实现并有回归测试。
+
+### 从推荐材料查看数据库结构
+
+点击推荐列表中的材料行，或化学式旁的“查看 3D”。列表同步仍只下载性质摘要；点击时才通过后端按该记录的材料 ID 请求 `material_id,formula_pretty,structure,symmetry`，不会按化学式猜测结构。同一化学式下的不同材料 ID 独立缓存。使用数据库返回的完整 pymatgen 晶胞和分数坐标，不再进行对称展开，查看器显示材料 ID、数据源、获取时间及缓存状态。
+
+浏览器会话与本地服务各有 30 分钟内存 LRU 缓存，各自最多 64 项、序列化数据合计 20 MB；过期后重新获取，刷新页面或重启服务分别清空相应缓存。仅成功且通过 ID/几何/占位检查的结构进入缓存。缺少结构、网络失败、认证失败、无效响应及取消的请求不会缓存，页面提供重试。切换材料或关闭查看器会取消旧请求，旧材料的结果不会覆盖当前材料。
+
+Mock 和未确认来源的记录不会发送结构请求，也不会使用演示结构代替，页面显示“暂无结构”。本地文件导入状态独立保留，可从查看器切回。查看数据库结构不会改变主动学习的标签、样本计数、排序或训练数据；结构特征提取及 uMLIP 仍未接入。
+
 ## 后端 API
 
 ### `GET /api/materials?limit={number}`
@@ -185,6 +213,10 @@ AL_CONFIG = {
 - 当前固定查询 `elements=Li,O`；`limit` 必须是 1–10000 的整数，否则返回 400。
 - 若未配置 `MP_API_KEY`，返回 503，错误代码为 `MISSING_API_KEY`。
 - 失败返回稳定的 `{error, code, retryable, service}`，可附带 `upstreamStatus`。常见代码包括 `ACCESS_DENIED`、`TIMEOUT`、`PROXY_ERROR`、`DNS_ERROR`、`TLS_ERROR`、`RATE_LIMITED` 和 `REDIRECT_ERROR`，不返回密钥或上游原始错误内容。
+
+### `GET /api/materials/:materialId/structure`
+
+按单个 `mp-…` / `mvc-…` ID 获取结构，兼容数字及新版字母数字 ID；格式无效的 ID 返回 400。密钥只在后端使用，沿用既有自动代理、证书验证、超时及取消处理。成功返回 `{data: {material_id, formula_pretty, structure, symmetry}, meta: {materialId, fetchedAt, cached}}`。缓存策略见上节；无对应结构返回 404 / `STRUCTURE_NOT_FOUND`，失败返回脱敏错误而不会回退为演示结构。
 
 ### `POST /api/chat`
 

@@ -29,6 +29,9 @@ import { Material, ALState, AL_CONFIG } from "./types";
 import { BenchmarkSimulator } from "./components/BenchmarkSimulator";
 import { networkMessage, type NetworkIssueCode } from "./services/NetworkStatus";
 
+import StructurePanel from "./components/StructurePanel";
+import type { MaterialStructureRequest } from "./structures/materialStructure";
+
 const engine = new MaterialsEngine();
 const model = new SurrogateModel();
 
@@ -77,7 +80,10 @@ const translations = {
     docsTitle: "System Documentation & Technical Specifications",
     benchmark: "Benchmark",
     benchmarkTitle: "Discovery Performance Validation",
-    close: "Close"
+    close: "Close",
+    themeClassic: "Classic",
+    themeScience: "Scientific blue",
+    perfMode: "Performance mode"
   },
   zh: {
     title: "AMI-AL 科研加速框架",
@@ -146,6 +152,15 @@ export default function App() {
   const [dataIssue, setDataIssue] = useState<NetworkIssueCode | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [showBenchmark, setShowBenchmark] = useState(false);
+  const [showStructure, setShowStructure] = useState(false);
+  const [hasOpenedStructure, setHasOpenedStructure] = useState(false);
+  const [structureMaterial, setStructureMaterial] = useState<MaterialStructureRequest | null>(null);
+  const structureRequestId = useRef(0);
+  const openStructure = () => { setStructureMaterial(null); setHasOpenedStructure(true); setShowStructure(true); };
+  const openMaterialStructure = (material: Material) => {
+    setStructureMaterial({ id: material.id, formula: material.formula, source: material.source, requestId: ++structureRequestId.current });
+    setHasOpenedStructure(true); setShowStructure(true);
+  };
   const [theme, setTheme] = useState<'classic' | 'science'>('classic');
   const [isIterating, setIsIterating] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -257,7 +272,11 @@ export default function App() {
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-[#141414] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-bold uppercase tracking-widest opacity-60">正在初始化 AMI-AL 高通量实验环境并对接 Materials Project 数据库...</p>
+          <button type="button" onClick={openStructure} className="px-4 py-2 border rounded-lg">
+            {lang === "zh" ? "先导入结构 / 3D 查看" : "Import structure / 3D viewer"}
+          </button>
         </div>
+        {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
       </div>
     );
   }
@@ -265,7 +284,7 @@ export default function App() {
   return (
     <div className={`min-h-screen ${theme === 'classic' ? 'bg-[#F5F5F0] text-[#141414]' : 'bg-[#F0F4F8] text-[#1A365D]'} font-sans transition-colors duration-500 p-6`}>
       {/* Header */}
-      <header className={`max-w-7xl mx-auto mb-8 flex justify-between items-end border-b ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pb-4`}>
+      <header className={`max-w-7xl mx-auto mb-8 flex flex-wrap gap-5 justify-between items-end border-b ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pb-4`}>
         <div>
           <h1 className="text-4xl font-serif italic font-medium tracking-tight">
             {t.title}
@@ -274,7 +293,10 @@ export default function App() {
             {t.subtitle}
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={openStructure} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-teal-700 bg-teal-700 text-white text-xs font-bold">
+            <Layers size={14} /> {lang === "zh" ? "结构导入 / 3D" : "Structure / 3D"}
+          </button>
           <button 
             onClick={() => setTheme(theme === 'classic' ? 'science' : 'classic')}
             className={`flex items-center gap-2 px-4 py-2 border ${theme === 'classic' ? 'border-[#141414]/20 hover:bg-[#141414]/5' : 'border-[#2B6CB0]/30 hover:bg-[#2B6CB0]/5 text-[#2B6CB0]'} transition-colors text-xs uppercase font-bold tracking-tighter rounded-lg`}
@@ -584,11 +606,16 @@ export default function App() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           key={m.id} 
-                          className={`border-b border-[#141414]/5 hover:bg-[#F5F5F0]/30 transition-colors ${m.isSampled ? (theme === 'classic' ? 'bg-emerald-50/30' : 'bg-teal-50/30') : ''}`}
+                          onClick={() => openMaterialStructure(m)}
+                          className={`cursor-pointer border-b border-[#141414]/5 hover:bg-[#F5F5F0]/30 transition-colors ${m.isSampled ? (theme === 'classic' ? 'bg-emerald-50/30' : 'bg-teal-50/30') : ''}`}
                         >
                           <td className="p-4 font-mono text-[10px] opacity-40">{m.id}</td>
                           <td className="p-4 font-serif italic text-lg">
-                            {m.formula}
+                            <button type="button" onClick={event => { event.stopPropagation(); openMaterialStructure(m); }}
+                              className="text-left hover:underline focus-visible:outline-2 focus-visible:outline-teal-600"
+                              aria-label={lang === "zh" ? `查看 ${m.formula}（${m.id}）的结构` : `View structure of ${m.formula} (${m.id})`}>
+                              {m.formula}<span className="ml-2 text-[10px] font-sans not-italic text-teal-700">{m.source === "materials-project" ? (lang === "zh" ? "查看 3D" : "View 3D") : (lang === "zh" ? "暂无结构" : "No structure")}</span>
+                            </button>
                             {m.isSampled && (
                               <span className={`ml-2 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${theme === 'classic' ? 'bg-emerald-100 text-emerald-700' : 'bg-teal-100 text-teal-700'}`}>
                                 Iter {m.iteration}
@@ -878,6 +905,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
     </div>
   );
 }

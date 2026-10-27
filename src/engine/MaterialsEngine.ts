@@ -68,6 +68,7 @@ export class MaterialsEngine {
         return {
           id: m.material_id,
           formula: m.formula_pretty,
+          source: "materials-project" as const,
           composition: m.composition,
           features,
           trueProperty: m.band_gap, 
@@ -125,6 +126,7 @@ export class MaterialsEngine {
 
         pool.push({
           id: `mock-${i}-${p}`, 
+          source: "mock",
           formula: p === 1 ? `${formula} (β)` : formula, 
           composition, 
           features, 

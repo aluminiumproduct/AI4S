@@ -1,6 +1,8 @@
 import express, { type Request, type Response } from "express";
 import OpenAI from "openai";
 import { NetworkFailure, httpFailure, networkFailure, type NetworkClient } from "./network";
+import { isMaterialId, normalizeMaterialStructure } from "../src/structures/materialStructure";
+import { StructureCache } from "../src/structures/StructureCache";
 
 interface ApiDependencies {
   network: NetworkClient;
@@ -47,6 +49,43 @@ function sendFailure(res: Response, error: unknown, service: "materials" | "chat
 export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000 }: ApiDependencies) {
   const app = express();
   app.use(express.json({ limit: "100kb" }));
+  const structures = new StructureCache<{ record: unknown; fetchedAt: string }>();
+
+  app.get("/api/materials/:materialId/structure", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const materialId = req.params.materialId;
+    if (!isMaterialId(materialId)) return sendFailure(res, new NetworkFailure("INVALID_REQUEST", 400), "materials");
+    const apiKey = configuredKey(env.MP_API_KEY);
+    if (!apiKey) return sendFailure(res, new NetworkFailure("MISSING_API_KEY", 503), "materials");
+    const cached = structures.get(materialId);
+    if (cached) return res.json({ data: cached.record, meta: { materialId, fetchedAt: cached.fetchedAt, cached: true } });
+    const scope = requestScope(req, res, materialsDeadlineMs);
+    const notFound = () => {
+      if (!res.destroyed && !res.writableEnded) res.status(404).json({ error: "No structure is available for this material.", code: "STRUCTURE_NOT_FOUND", retryable: false, service: "materials" });
+    };
+    try {
+      const response = await network.request<{ data: any[] }>({
+        url: materialsEndpoint, signal: scope.signal,
+        headers: { accept: "application/json", "X-API-KEY": apiKey, "User-Agent": "AMI-AL-Prototype/2.0" },
+        params: { material_ids: materialId, _limit: 1, _fields: "material_id,formula_pretty,structure,symmetry" },
+      });
+      scope.signal.throwIfAborted();
+      if (response.status === 404) return notFound();
+      if (response.status < 200 || response.status >= 300) throw httpFailure(response.status);
+      const rows = response.data?.data;
+      if (!Array.isArray(rows)) throw new NetworkFailure("BAD_RESPONSE");
+      if (rows.length === 0) return notFound();
+      if (rows.length !== 1 || rows[0]?.material_id !== materialId) throw new NetworkFailure("BAD_RESPONSE");
+      if (rows[0].structure == null) return notFound();
+      const record = { material_id: rows[0].material_id, formula_pretty: rows[0].formula_pretty, structure: rows[0].structure, symmetry: rows[0].symmetry };
+      const fetchedAt = new Date().toISOString();
+      try { normalizeMaterialStructure(record, materialId, fetchedAt); }
+      catch { throw new NetworkFailure("BAD_RESPONSE"); }
+      structures.set(materialId, { record, fetchedAt });
+      if (!res.destroyed) res.json({ data: record, meta: { materialId, fetchedAt, cached: false } });
+    } catch (error) { sendFailure(res, error, "materials", scope.timedOut()); }
+    finally { scope.dispose(); }
+  });
 
   app.get("/api/materials", async (req, res) => {
     const rawLimit = req.query.limit;

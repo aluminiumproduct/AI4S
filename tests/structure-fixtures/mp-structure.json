@@ -1,0 +1,15 @@
+{
+  "material_id": "mp-1234",
+  "formula_pretty": "Li2O",
+  "symmetry": { "symbol": "Fm-3m" },
+  "structure": {
+    "@module": "pymatgen.core.structure",
+    "@class": "Structure",
+    "lattice": { "matrix": [[0, 2, 2], [2, 0, 2], [2, 2, 0]], "pbc": [true, true, true] },
+    "sites": [
+      { "label": "Li1", "species": [{ "element": "Li", "occu": 1 }], "abc": [0.25, 0.25, 0.25] },
+      { "label": "Li2", "species": [{ "element": "Li", "occu": 1 }], "abc": [0.75, 0.75, 0.75] },
+      { "label": "O1", "species": [{ "element": "O", "occu": 1 }], "abc": [0, 0, 0] }
+    ]
+  }
+}

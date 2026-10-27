@@ -1,0 +1,15 @@
+Selective fixture with optional velocities
+1
+2 0 0
+0 2 0
+0 0 2
+Fe O
+1 1
+selective dynamics
+k
+0.5 1 1.5 T f T Fe
+0 0 0 F F F O
+
+Cartesian
+0 0 0
+0 0 0

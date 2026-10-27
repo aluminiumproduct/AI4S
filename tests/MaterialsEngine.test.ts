@@ -11,6 +11,7 @@ test("repeated fallback replaces the pool without accumulating duplicate IDs", a
   assert.equal(await engine.loadRealData(10), false);
   const previous = engine.getPool();
   assert.equal(previous.length, 20); // Preserve the existing two polymorphs per composition.
+  assert.ok(previous.every(m => m.source === "mock"));
   await engine.loadRealData(10);
   const next = engine.getPool();
   assert.equal(next.length, 20);
@@ -28,6 +29,7 @@ test("fallback after real data cannot mix real labels with synthetic scores", as
   });
   const engine = new MaterialsEngine();
   assert.equal(await engine.loadRealData(1), true);
+  assert.equal(engine.getPool()[0].source, "materials-project");
   fail = true;
   assert.equal(await engine.loadRealData(2), false);
   assert.equal(engine.getPool().length, 4);
