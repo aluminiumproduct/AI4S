@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Material } from "../types";
-import { MaterialsProjectService, MPData } from "../services/MaterialsProjectService";
+import type { MPData } from "../services/MaterialsProjectService";
 
 /**
  * Real Materials Engine interfacing with Materials Project.
@@ -8,14 +8,6 @@ import { MaterialsProjectService, MPData } from "../services/MaterialsProjectSer
 export class MaterialsEngine {
   private pool: Material[] = [];
   private globalMax: number = 0;
-  private mpService: MaterialsProjectService | null = null;
-
-  constructor() {
-    const apiKey = process.env.MP_API_KEY || (import.meta as any).env?.VITE_MP_API_KEY;
-    if (apiKey && apiKey !== "YOUR_MP_API_KEY") {
-      this.mpService = new MaterialsProjectService(apiKey);
-    }
-  }
 
   /**
    * Enhanced featurizer including structural descriptors.

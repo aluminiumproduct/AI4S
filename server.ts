@@ -6,11 +6,6 @@ import OpenAI from "openai";
 
 dotenv.config();
 
-const openai = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/v1",
-});
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -103,6 +98,10 @@ async function startServer() {
     }
 
     try {
+      const openai = new OpenAI({
+        apiKey,
+        baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/v1",
+      });
       const completion = await openai.chat.completions.create({
         model,
         messages,
