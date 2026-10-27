@@ -18,7 +18,8 @@ import {
   X,
   Palette,
   Zap,
-  BarChart3
+  BarChart3,
+  Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { MaterialsEngine } from "./engine/MaterialsEngine";
@@ -28,6 +29,8 @@ import { getStopReason, runActiveLearningStep } from "./engine/ActiveLearningLoo
 import { Material, ALState, AL_CONFIG } from "./types";
 import { BenchmarkSimulator } from "./components/BenchmarkSimulator";
 import { networkMessage, type NetworkIssueCode } from "./services/NetworkStatus";
+import MaterialsAdvisor, { type AdvisorRequest } from "./components/MaterialsAdvisor";
+import { advisorCandidates, type AdvisorAction } from "./services/AdvisorContext";
 
 import StructurePanel from "./components/StructurePanel";
 import type { MaterialStructureRequest } from "./structures/materialStructure";
@@ -53,7 +56,7 @@ const translations = {
     liveMetrics: "Live Metrics",
     iteration: "Iteration",
     sampledTotal: "Sampled / Total",
-    bestConductivity: "Best Property (log)",
+    bestConductivity: "Best Observed Value",
     regretCurve: "Optimization Regret Curve",
     searchSpace: "Search Space Exploration",
     recommendations: "Recent Experimental Recommendations",
@@ -73,7 +76,7 @@ const translations = {
     pending: "Pending",
     iter: "Iter",
     methodologyDesc: "The framework implements a high-fidelity Bayesian Optimization (BO) loop. By employing an Ensemble of Regressors as a surrogate model, the system approximates the non-convex property landscape derived from first-principles (DFT) calculations. The acquisition strategy utilizes a cost-aware probabilistic approach to balance epistemic uncertainty with predicted performance, ensuring global convergence within minimal experimental iterations.",
-    representationDesc: "Materials are encoded via a multi-fidelity descriptor set: 10D compositional vectors fused with structural motif descriptors (Lattice distortion, Coordination, Electronegativity). This high-dimensional featurization resolves the 'compositional ambiguity' inherent in polymorphs, enabling structure-property mapping with sub-eV precision.",
+    representationDesc: "The current prototype uses 8 composition features and 3 simulated descriptors for electronegativity difference, lattice distortion and coordination. Composition encoding differs between real and Mock modes. Structural descriptors have not yet been calculated from crystal coordinates.",
     objectiveDesc: "The primary objective is the accelerated discovery of wide-bandgap lithium oxides for high-voltage solid-state insulation. The system targets candidates with E_g > 6.0 eV, aiming to achieve a 5x acceleration in the discovery rate compared to conventional E-discovering workflows.",
     langToggle: "中文",
     docs: "Documentation",
@@ -98,7 +101,7 @@ const translations = {
     liveMetrics: "实时指标",
     iteration: "迭代轮次",
     sampledTotal: "已采样 / 总计",
-    bestConductivity: "最佳性能指标 (log)",
+    bestConductivity: "最佳已观测值",
     regretCurve: "优化收敛曲线 (Regret)",
     searchSpace: "搜索空间探索",
     recommendations: "近期实验推荐",
@@ -118,7 +121,7 @@ const translations = {
     pending: "待定",
     iter: "轮次",
     methodologyDesc: "本框架实现了高保真贝叶斯优化 (BO) 闭环。通过利用集成回归器作为代理模型，系统能够高精度逼近基于第一性原理 (DFT) 计算的非凸性能表面。获取策略采用代价敏感的概率方法，严密平衡认知不确定性与预测性能，确保在极少实验迭代内实现全局收敛。",
-    representationDesc: "材料采用多保真描述符集编码：10维成分向量与结构基元描述符（晶格畸变、配位数、电负性差异）深度融合。这种高维特征化方法解决了同质异构体固有的“成分歧义”，实现了亚电子伏特精度的结构-性能映射。",
+    representationDesc: "当前原型采用 8 维成分特征和 3 维模拟描述符（电负性差、晶格畸变、配位数）。真实与 Mock 模式的组成编码不同；结构描述符尚未由晶体坐标计算，不能作为真实机理证据。",
     objectiveDesc: "核心目标是加速发现用于高压固态绝缘的宽带隙锂氧化物。系统锁定带隙 E_g > 6.0 eV 的候选材料，旨在比传统实验发现流程实现 5 倍以上的加速比。",
     langToggle: "English",
     docs: "系统文档",
@@ -152,6 +155,14 @@ export default function App() {
   const [dataIssue, setDataIssue] = useState<NetworkIssueCode | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [showBenchmark, setShowBenchmark] = useState(false);
+  const [showAdvisor, setShowAdvisor] = useState(false);
+  const [advisorRunId, setAdvisorRunId] = useState(0);
+  const [advisorRequest, setAdvisorRequest] = useState<AdvisorRequest | null>(null);
+  const advisorRequestId = useRef(0);
+  const openAdvisor = (materialId?: string, action?: AdvisorAction) => {
+    setAdvisorRequest({ requestId: ++advisorRequestId.current, materialId, action });
+    setShowAdvisor(true);
+  };
   const [showStructure, setShowStructure] = useState(false);
   const [hasOpenedStructure, setHasOpenedStructure] = useState(false);
   const [structureMaterial, setStructureMaterial] = useState<MaterialStructureRequest | null>(null);
@@ -170,6 +181,7 @@ export default function App() {
   const stopReason = getStopReason(pool, totalBudget);
 
   const loadData = async (size: number) => {
+    setAdvisorRunId(value => value + 1);
     const request = ++loadRequest.current;
     runVersion.current++;
     setIsAutoRunning(false);
@@ -239,6 +251,7 @@ export default function App() {
   };
 
   const reset = () => {
+    setAdvisorRunId(value => value + 1);
     runVersion.current++;
     setRunError(null);
     // In-place reset of the current pool to avoid re-loading from API
@@ -265,6 +278,8 @@ export default function App() {
     const timer = setTimeout(() => { void runIteration(); }, 800);
     return () => clearTimeout(timer);
   }, [isAutoRunning, isLoadingData, isIterating, pool, state, strategy, batchSize, totalBudget, stopReason, runError]);
+
+  const topAdvisorCandidates = useMemo(() => advisorCandidates(pool), [pool]);
 
   if (!isLoaded) {
     return (
@@ -294,6 +309,9 @@ export default function App() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => openAdvisor()} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#b5a36d] bg-[#f3ecd7] text-[#514522] text-xs font-bold">
+            <Sparkles size={14} /> {lang === "zh" ? "AI 首席材料顾问" : "AI Materials Advisor"}
+          </button>
           <button type="button" onClick={openStructure} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-teal-700 bg-teal-700 text-white text-xs font-bold">
             <Layers size={14} /> {lang === "zh" ? "结构导入 / 3D" : "Structure / 3D"}
           </button>
@@ -563,6 +581,19 @@ export default function App() {
             </div>
           </div>
 
+          <section className="rounded-3xl border border-[#d6dfce] bg-[#f5f6ec] p-5" aria-label={lang === "zh" ? "AI 优先候选" : "AI candidate shortlist"}>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div><h3 className="flex items-center gap-2 text-sm font-semibold text-[#35523c]"><Sparkles size={16} />{lang === "zh" ? "让推荐走向研究方案" : "From ranking to a research plan"}</h3><p className="text-[10px] text-[#7b8971] mt-1">{lang === "zh" ? `第 ${state.iteration} 轮 · 最近一次预测的 Top-3 · 下一轮重训可能改变排序` : `Round ${state.iteration} · Top 3 from the last prediction pass · Retraining may change the order`}</p></div>
+              <button type="button" disabled={isLoadingData} onClick={() => openAdvisor(undefined, "overview")} className="text-xs font-semibold text-[#456447] px-3 py-2 rounded-lg border border-[#c4d1bb] bg-white disabled:opacity-40">{lang === "zh" ? "AI 复盘本轮" : "Review this round"}</button>
+            </div>
+            {topAdvisorCandidates.length ? <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{topAdvisorCandidates.map((m, index) => <div key={m.id} className="bg-white/85 rounded-xl border border-[#e0e5d7] p-4">
+              <div className="flex justify-between items-start gap-2"><span className="font-serif text-lg italic">{m.formula}</span><span className="text-[10px] text-[#9a8a50]">0{index + 1}</span></div>
+              <p className="text-[9px] text-[#8d9782] font-mono truncate mt-1">{m.id}</p>
+              <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1 text-[#5e7157] font-mono my-3"><span>µ {m.predictedMean?.toFixed(3)}</span><span>σ {m.predictedStd?.toFixed(3)}</span><span>{lang === "zh" ? "成本" : "Cost"} {m.cost.toFixed(2)}</span></div>
+              <div className="flex flex-wrap gap-2"><button type="button" disabled={isLoadingData} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
+            </div>)}</div> : <p className="text-xs leading-relaxed text-[#829077]">{lang === "zh" ? "运行一轮主动学习后，这里会展示可解析的候选。也可以打开顾问，先讨论当前材料与研究目标。" : "Run a learning step to populate this shortlist, or open the advisor to discuss your materials and research objective."}</p>}
+          </section>
+
           {/* Data Table / Material List */}
           <div className={`${theme === 'classic' ? 'bg-white' : 'bg-white/90'} rounded-3xl border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'} overflow-hidden`}>
             <div className={`p-6 border-b ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'} flex justify-between items-center`}>
@@ -587,6 +618,7 @@ export default function App() {
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.uncertainty}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.acquisition}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.trueValue}</th>
+                    <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "AI 顾问" : "AI Advisor"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -639,6 +671,7 @@ export default function App() {
                           <td className="p-4 font-mono text-xs font-bold">
                             {m.isSampled ? m.trueProperty.toFixed(4) : "???"}
                           </td>
+                          <td className="p-3 text-[10px] min-w-28"><button type="button" disabled={isLoadingData} onClick={event => { event.stopPropagation(); openAdvisor(m.id, "mechanism"); }} className="block text-[#8b6d29] hover:underline disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData} onClick={event => { event.stopPropagation(); openAdvisor(m.id); }} className="block mt-2 text-[#51774e] hover:underline disabled:opacity-40">{lang === "zh" ? "合成 / 计算方案" : "Research plan"}</button></td>
                         </motion.tr>
                       ))}
                   </AnimatePresence>
@@ -648,6 +681,9 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      <button type="button" onClick={() => openAdvisor()} className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-[#1e5542] text-[#f8f4df] border border-[#b9ac73] shadow-xl text-xs font-semibold" aria-label={lang === "zh" ? "打开 AI 首席材料顾问" : "Open AI materials advisor"}><Sparkles size={17} />{lang === "zh" ? "问问材料顾问" : "Ask the advisor"}</button>
+      <MaterialsAdvisor open={showAdvisor} onClose={() => setShowAdvisor(false)} input={{ pool, state, strategy, batchSize, totalBudget, isRealData, runId: advisorRunId }} lang={lang} loading={isLoadingData} request={advisorRequest} />
 
       {/* Research Methodology Modal / Info */}
       <footer className={`max-w-7xl mx-auto mt-12 grid grid-cols-3 gap-8 border-t ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pt-8 pb-12`}>

@@ -125,7 +125,7 @@ export function createApiApp({ network, env = process.env, materialsEndpoint = "
   app.post("/api/chat", async (req, res) => {
     const apiKey = configuredKey(env.DEEPSEEK_API_KEY);
     if (!apiKey) return sendFailure(res, new NetworkFailure("MISSING_API_KEY", 503), "chat");
-    const { messages, model = "deepseek-chat", temperature = 0.7, max_tokens = 2048 } = req.body ?? {};
+    const { messages, model = "deepseek-flash", temperature = 0.7, max_tokens = 2048 } = req.body ?? {};
     if (!Array.isArray(messages) || messages.length === 0) return sendFailure(res, new NetworkFailure("INVALID_REQUEST", 400), "chat");
     const scope = requestScope(req, res, chatDeadlineMs);
     try {
@@ -133,7 +133,11 @@ export function createApiApp({ network, env = process.env, materialsEndpoint = "
       const endpoint = new URL(baseURL);
       if (!["http:", "https:"].includes(endpoint.protocol) || endpoint.username || endpoint.password) throw new NetworkFailure("NETWORK_ERROR", 503);
       const openai = new OpenAI({ apiKey, baseURL, fetch: network.fetch, maxRetries: 0, timeout: chatDeadlineMs, logLevel: "off" });
-      const completion = await openai.chat.completions.create({ model, messages, temperature, max_tokens, stream: false }, { signal: scope.signal });
+      // Flash defaults to thinking mode upstream. Keep this short, non-streaming
+      // advisor responsive; do not send provider-specific options to other hosts.
+      const fastFlash = endpoint.hostname === "api.deepseek.com" && model === "deepseek-flash";
+      const completion = await openai.chat.completions.create({ model, messages, temperature, max_tokens,
+        ...(fastFlash ? { reasoning_effort: "none" as const } : {}), stream: false }, { signal: scope.signal });
       if (!Array.isArray(completion?.choices) || completion.choices.length === 0
         || !completion.choices.every(choice => Number.isInteger(choice?.index) && choice.message?.role === "assistant")) {
         throw new NetworkFailure("BAD_RESPONSE");

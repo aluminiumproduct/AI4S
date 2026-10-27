@@ -133,7 +133,25 @@ test("chat SDK uses the shared transport and preserves its success response", as
   assert.equal(response.data.choices[0].message.content, "OK");
   assert.equal(response.data.usage.total_tokens, 2);
   assert.equal(body.stream, false);
+  assert.equal(body.model, "deepseek-flash");
+  assert.equal(body.reasoning_effort, undefined); // Leave other compatible hosts unchanged.
   assert.equal(hits, 1);
+});
+
+test("the official Flash default uses non-thinking mode without a live upstream call", async t => {
+  let body: any;
+  const network = {
+    async request(): Promise<never> { throw new Error("Unexpected upstream request"); },
+    async fetch(input: string | URL | Request, init?: RequestInit) {
+      body = await new Request(input, init).json();
+      return Response.json({ model: "deepseek-flash", choices: [{ index: 0, message: { role: "assistant", content: "OK" }, finish_reason: "stop" }] });
+    }, close() {},
+  };
+  const url = await listen(t, http.createServer(createApiApp({ network, env: keys })));
+  const response = await local(url + "/api/chat", { method: "POST", data: { messages: [{ role: "user", content: "test" }] } });
+  assert.equal(response.status, 200);
+  assert.equal(body.model, "deepseek-flash");
+  assert.equal(body.reasoning_effort, "none");
 });
 
 test("malformed chat success is a non-retryable bad response", async t => {
