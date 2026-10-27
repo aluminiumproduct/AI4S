@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { advisorCandidates, advisorMessages, buildAdvisorContext, type AdvisorInput } from "../src/services/AdvisorContext";
 import { material, state } from "./fixtures";
+import { DEFAULT_MODEL_CONFIG, MODEL_CATALOG } from "../src/engine/models/config";
+import { extractCompositionFeatures } from "../src/engine/CompositionFeatures";
 
 function input(overrides: Partial<AdvisorInput> = {}): AdvisorInput {
-  return { pool: [], state: state(), strategy: "UCB", batchSize: 2, totalBudget: 50, isRealData: true, runId: 1, ...overrides };
+  return { pool: [], state: state(), strategy: "UCB", batchSize: 2, totalBudget: 50, isRealData: true, runId: 1, modelConfig: { ...DEFAULT_MODEL_CONFIG }, ...overrides };
 }
 
 test("advisor serializes the best observed material but no unsampled oracle labels or oracle regret", () => {
@@ -31,17 +33,19 @@ test("Top-3 uses existing cost-aware scores, including zero and negative values,
   assert.equal(JSON.stringify(pool), before);
 });
 
-test("real and Mock feature orders, normalization and simulated provenance are explicit", () => {
+test("real and Mock share the deterministic 22D composition schema with explicit scaling", () => {
   const real = buildAdvisorContext(input({ pool: [material(1, { isSampled: true })] })).best_observed_material!;
   const mockContext = buildAdvisorContext(input({ isRealData: false, pool: [material(1, { isSampled: true, source: "mock" })] }));
   const mock = mockContext.best_observed_material!;
-  assert.equal(real.features[1].name, "O_atomic_fraction");
-  assert.equal(mock.features[1].name, "La_count_divided_by_10");
-  assert.match(mock.features[1].provenance, /not normalized/);
-  for (const descriptor of [...real.features.slice(8), ...mock.features.slice(8)]) assert.match(descriptor.provenance, /SIMULATED/);
+  assert.equal(real.features.length, 22);
+  assert.deepEqual(real.features, mock.features);
+  assert.equal(real.features[0].name, "electronegativityPauling.mean");
+  assert.equal(real.features[0].scale_divisor, 4);
+  assert.equal(real.features[21].name, "toleranceFactor.valid");
+  for (const descriptor of real.features) assert.match(descriptor.provenance, /deterministic composition/);
   assert.match(real.cost.provenance, /not measured/);
   assert.match(mockContext.objective.unit, /^arbitrary/);
-  assert.match(mockContext.learning.uncertainty, /not a calibrated confidence/);
+  assert.match(mockContext.learning.uncertainty, /not a calibrated confidence/i);
 });
 
 test("context is a detached snapshot and ignores missing or nonfinite predictions", () => {
@@ -65,11 +69,15 @@ test("empty and untrained pools do not invent a winner or a recommendation", () 
   assert.deepEqual(buildAdvisorContext(input({ pool: [material()] })).top_candidates, []);
 });
 
-test("advisor exposes the actual scoring rule and identifies composition lost by the limited feature vector", () => {
-  const row = material(1, { composition: { Li: 2, O: 1, Br: 1 }, source: "materials-project" });
+test("advisor exposes the scoring rule and missing reference constants without dropping elements", () => {
+  const composition = { Li: 1, He: 1 };
+  const row = material(1, { composition, ...extractCompositionFeatures(composition), source: "materials-project" });
   const context = buildAdvisorContext(input({ pool: [row] }), row.id);
   assert.equal(context.learning.score_formula, "(mu + 2 * sigma) / estimated_cost");
-  assert.deepEqual(context.selected_material?.composition_elements_missing_from_feature_vector, ["Br"]);
+  assert.equal(context.selected_material?.composition.He, 1);
+  assert.deepEqual(context.selected_material?.properties_with_missing_constants.find(p => p.property === "electronegativityPauling"), {
+    property: "electronegativityPauling", coverage: 0.5, missing_elements: ["He"],
+  });
   assert.match(buildAdvisorContext(input({ strategy: "Random" })).learning.score_formula, /not a performance ranking/);
 });
 
@@ -78,10 +86,30 @@ test("multibyte history is bounded while retaining the current snapshot and scie
   const history = Array.from({ length: 30 }, (_, i) => ({ question: `question-${i}`, answer: "研究建议".repeat(3000), iteration: i }));
   const messages = advisorMessages("比较当前候选", context, history, "zh");
   assert.equal(messages[0].role, "system");
-  assert.match(messages[0].content, /random descriptors are not physical evidence/);
+  assert.match(messages[0].content, /Zero placeholders do not mean measured zeros/);
   assert.match(messages[0].content, /Do not invent citations/);
   assert.match(messages.at(-1)!.content, /比较当前候选/);
   assert.match(messages.at(-1)!.content, /"run_id":1/);
   assert.ok(new TextEncoder().encode(JSON.stringify({ messages })).length <= 85_000);
   assert.ok(messages.length <= 14);
+});
+
+test("advisor snapshots the selected model and its uncertainty definition without retaining mutable config", () => {
+  for (const model of MODEL_CATALOG) {
+    const source = input({ modelConfig: { ...DEFAULT_MODEL_CONFIG, kind: model.id } });
+    const context = buildAdvisorContext(source);
+    assert.equal(context.learning.surrogate, model.en);
+    assert.equal(context.learning.model_config.kind, model.id);
+    assert.match(context.learning.uncertainty, model.id === "gpr" ? /latent GP posterior/ : /disagreement|arbitrary/);
+    source.modelConfig.seed = 999;
+    assert.equal(context.learning.model_config.seed, DEFAULT_MODEL_CONFIG.seed);
+  }
+});
+
+test("an unknown feature schema is never relabelled as composition statistics", () => {
+  const row = material(1, { descriptors: undefined, features: [0.3, 0.8] });
+  const snapshot = buildAdvisorContext(input({ pool: [row] }), row.id).selected_material!;
+  assert.equal(snapshot.descriptor_schema, null);
+  assert.equal(snapshot.features[0].name, "unmapped_feature_0");
+  assert.equal(snapshot.features[0].scale_divisor, null);
 });

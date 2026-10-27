@@ -1,4 +1,5 @@
 import { Material } from "../types";
+import { createSeededRandom, hashString } from "./SeededRandom";
 
 export type AcquisitionStrategy = "Random" | "Uncertainty" | "EI" | "UCB";
 
@@ -8,7 +9,8 @@ export class AcquisitionFunction {
     strategy: AcquisitionStrategy, 
     bestObserved: number,
     kappa: number = 2.0,
-    isCostAware: boolean = true
+    isCostAware: boolean = true,
+    random: () => number = createSeededRandom(hashString(`${material.id}|${bestObserved}`)),
   ): number {
     const { mean, std } = { 
       mean: material.predictedMean ?? 0,
@@ -18,7 +20,7 @@ export class AcquisitionFunction {
     let value = 0;
     switch (strategy) {
       case "Random":
-        value = Math.random();
+        value = random();
         break;
       
       case "Uncertainty":

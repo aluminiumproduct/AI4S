@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createSeededRandom } from '../engine/SeededRandom';
 import {
   LineChart,
   Line,
@@ -29,8 +30,8 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
 
   const t = {
     en: {
-      title: "Discovery Curve Illustration",
-      subtitle: "Scripted illustration — not a comparison of the selected models",
+      title: "Strategy Illustration",
+      subtitle: "Reproducible synthetic curves — not measured model performance",
       start: "Start Simulation",
       reset: "Reset",
       random: "Random Search",
@@ -46,8 +47,8 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
       discoveryRate: "Animation progress"
     },
     zh: {
-      title: "发现曲线示意",
-      subtitle: "预设递推动画，不是当前所选模型的对比实验",
+      title: "策略示意",
+      subtitle: "可重复的合成曲线，不是模型实测性能",
       start: "开始模拟",
       reset: "重置",
       random: "随机搜索 (Random)",
@@ -65,18 +66,19 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
   }[lang];
 
   const generateStep = (step: number, prev: SimulationPoint | null): SimulationPoint => {
+    const random = createSeededRandom(0x42454e43 + step);
     // Target is 1.0
     const target = 1.0;
     
     // Random: Slow linear-ish growth
-    const randomVal = prev ? Math.max(prev.random, Math.random() * 0.4 + (step / maxSteps) * 0.3) : 0.1;
+    const randomVal = prev ? Math.max(prev.random, random() * 0.4 + (step / maxSteps) * 0.3) : 0.1;
     
     // GP-BO: Faster logarithmic growth
-    const gpboVal = prev ? Math.max(prev.gpbo, Math.min(0.98, prev.gpbo + Math.random() * 0.05 * (1 - prev.gpbo / 1.1))) : 0.2;
+    const gpboVal = prev ? Math.max(prev.gpbo, Math.min(0.98, prev.gpbo + random() * 0.05 * (1 - prev.gpbo / 1.1))) : 0.2;
     
     // AMI-AL: Fastest sigmoid-like growth
     // Illustration only; no discovery-speedup measurement.
-    const amialVal = prev ? Math.max(prev.amial, Math.min(1.0, prev.amial + Math.random() * 0.15 * (1.05 - prev.amial))) : 0.35;
+    const amialVal = prev ? Math.max(prev.amial, Math.min(1.0, prev.amial + random() * 0.15 * (1.05 - prev.amial))) : 0.35;
 
     return {
       step,
@@ -212,7 +214,7 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
                 <p className="text-[10px] uppercase font-bold opacity-40">{t.vsRandom}</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-serif italic text-emerald-400">—</span>
-                  <span className="text-[10px] opacity-40">{lang === 'zh' ? '尚未测量' : 'Not measured'}</span>
+                  <span className="text-[10px] opacity-40">{lang === 'zh' ? '未实测' : 'Not measured'}</span>
                 </div>
               </div>
 
@@ -220,7 +222,7 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
                 <p className="text-[10px] uppercase font-bold opacity-40">{t.vsGPBO}</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-serif italic text-blue-400">—</span>
-                  <span className="text-[10px] opacity-40">{lang === 'zh' ? '尚未测量' : 'Not measured'}</span>
+                  <span className="text-[10px] opacity-40">{lang === 'zh' ? '未实测' : 'Not measured'}</span>
                 </div>
               </div>
             </div>

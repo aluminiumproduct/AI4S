@@ -2,6 +2,7 @@ import { AL_CONFIG, type ALState, type Material } from "../types";
 import { AcquisitionFunction, type AcquisitionStrategy } from "./AcquisitionFunction";
 import type { FeaturePoint } from "./SurrogateModel";
 import type { Prediction } from "./models/regressors";
+import { createSeededRandom } from "./SeededRandom";
 
 export type StopReason = "empty-pool" | "budget-exhausted" | "candidates-exhausted";
 
@@ -35,7 +36,7 @@ export async function runActiveLearningStep(
   config: StepConfig,
   model: Surrogate,
 ): Promise<{ pool: Material[]; state: ALState; advanced: boolean; stopReason: StopReason | null }> {
-  const { totalBudget, batchSize, initialSamples = AL_CONFIG.INITIAL_SAMPLES, random = Math.random } = config;
+  const { totalBudget, batchSize, initialSamples = AL_CONFIG.INITIAL_SAMPLES, random = createSeededRandom(0x414c5345) } = config;
   config.signal?.throwIfAborted();
   if (!Number.isSafeInteger(totalBudget) || totalBudget < 0
     || !Number.isSafeInteger(batchSize) || batchSize < 1
@@ -75,6 +76,7 @@ export async function runActiveLearningStep(
   await model.train(sampled);
   config.signal?.throwIfAborted();
   const bestObserved = Math.max(...sampled.map(material => material.trueProperty));
+  const scoreRandom = createSeededRandom(0x53434f52 + state.iteration);
   const candidatesToPredict = nextPool.filter(material => !material.isSampled);
   const predictions = model.predictBatch
     ? await model.predictBatch(candidatesToPredict.map(material => ({ features: material.features })))
@@ -89,7 +91,7 @@ export async function runActiveLearningStep(
     if (!Number.isFinite(mean) || !Number.isFinite(std) || std < 0) throw new Error("Invalid surrogate prediction");
     material.predictedMean = mean;
     material.predictedStd = std;
-    material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true);
+    material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true, scoreRandom);
   }
 
   if (!initializing) {

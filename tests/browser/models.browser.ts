@@ -1,19 +1,21 @@
 import { ModelWorkerClient } from "../../src/engine/ModelWorkerClient";
 import { MODEL_CATALOG } from "../../src/engine/models/config";
 import { seededRandom } from "../../src/engine/models/math";
+import { extractCompositionFeatures } from "../../src/engine/CompositionFeatures";
 
 const output = document.querySelector<HTMLPreElement>("#results")!;
 const button = document.querySelector<HTMLButtonElement>("#run")!;
 const random = seededRandom(20261027);
 const samples = (n: number) => Array.from({ length: n }, () => {
-  const features = Array.from({ length: 11 }, random);
+  const { features } = extractCompositionFeatures({ Li: 1 + Math.floor(8 * random()), O: 1 + Math.floor(12 * random()),
+    [(["P", "S", "Ge", "Sn", "La", "Zr", "Ti", "Sr"])[Math.floor(8 * random())]]: 1 + Math.floor(4 * random()) });
   return { features, trueProperty: Math.sin(4 * features[0]) + features[1] ** 2 + 0.5 * features[2] };
 });
 const train = samples(50), test = samples(1000);
 const log = (line: string) => { output.textContent += line + "\n"; };
 button.onclick = async () => {
   button.disabled = true;
-  output.textContent = "50 训练样本 × 11 特征，1000 独立合成候选\n";
+  output.textContent = "50 训练样本 × 22 维组成特征，1000 独立合成候选（目标为合成函数）\n";
   try {
     for (const { id, zh } of MODEL_CATALOG) {
       const client = new ModelWorkerClient({ kind: id });
@@ -29,11 +31,12 @@ button.onclick = async () => {
     const client = new ModelWorkerClient({ kind: "knn" });
     try {
       await client.train(samples(200));
+      const stressCandidates = samples(20_000);
       let frames = 0, alive = true;
       const heartbeat = () => { if (alive) { frames++; requestAnimationFrame(heartbeat); } };
       requestAnimationFrame(heartbeat);
       const started = performance.now();
-      const work = client.predictBatch(samples(20_000));
+      const work = client.predictBatch(stressCandidates);
       setTimeout(() => client.cancel(), 80);
       let cancelled = false;
       try { await work; } catch (error) { cancelled = error instanceof Error && error.name === "AbortError"; }

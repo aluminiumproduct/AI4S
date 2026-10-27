@@ -1,11 +1,13 @@
 import type { ALState, Material } from "../src/types";
+import { extractCompositionFeatures } from "../src/engine/CompositionFeatures";
 
 export function material(index = 0, overrides: Partial<Material> = {}): Material {
   return {
     id: `test-${index}`,
     formula: "Li2O",
     composition: { Li: 2, O: 1 },
-    features: [2 / 3, 1 / 3, 0, 0, 0, 0, 0, 0, 0.2, 0.3, 4],
+    ...extractCompositionFeatures({ Li: 2, O: 1 }),
+    targetKind: "band-gap",
     trueProperty: index + 1,
     cost: 1,
     isSampled: false,

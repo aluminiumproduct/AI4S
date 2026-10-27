@@ -38,6 +38,8 @@ import { advisorCandidates, type AdvisorAction } from "./services/AdvisorContext
 
 import StructurePanel from "./components/StructurePanel";
 import type { MaterialStructureRequest } from "./structures/materialStructure";
+import { CompositionDescriptorPanel } from "./components/CompositionDescriptorPanel";
+import { hashString } from "./engine/SeededRandom";
 
 const engine = new MaterialsEngine();
 
@@ -59,7 +61,7 @@ const translations = {
     liveMetrics: "Live Metrics",
     iteration: "Iteration",
     sampledTotal: "Sampled / Total",
-    bestConductivity: "Best Observed Value",
+    bestConductivity: "Best Observed Target",
     regretCurve: "Optimization Regret Curve",
     searchSpace: "Search Space Exploration",
     recommendations: "Recent Experimental Recommendations",
@@ -70,7 +72,7 @@ const translations = {
     acquisition: "Acquisition",
     trueValue: "True Value",
     cost: "Cost",
-    similarityMap: "Chemical Space Similarity Map",
+    similarityMap: "Composition Descriptor Projection",
     methodology: "Methodology",
     representation: "Representation",
     objective: "Objective",
@@ -79,17 +81,17 @@ const translations = {
     pending: "Pending",
     iter: "Iter",
     methodologyDesc: "Choose an RBF Gaussian process, tree ensembles, kNN or a linear baseline. Models train on sampled labels in a background Worker. GP posterior standard deviation and ensemble disagreement have different meanings; neither guarantees convergence or accuracy on new materials.",
-    representationDesc: "The current prototype uses 8 composition features and 3 simulated descriptors for electronegativity difference, lattice distortion and coordination. Composition encoding differs between real and Mock modes. Structural descriptors have not yet been calculated from crystal coordinates.",
-    objectiveDesc: "The primary objective is the accelerated discovery of wide-bandgap lithium oxides for high-voltage solid-state insulation. The system targets candidates with E_g > 6.0 eV, aiming to achieve a 5x acceleration in the discovery rate compared to conventional E-discovering workflows.",
+    representationDesc: "A shared 22-dimensional composition representation uses offline element constants: weighted means, population variances, ranges and coverage for five properties, plus a conditional ABO3 tolerance factor and validity flag. Identical compositions have identical descriptors; crystal polymorphs require additional structural data.",
+    objectiveDesc: "Real Materials Project records use database band gaps. Mock records use a labelled deterministic synthetic score; it is not a material band gap or a DFT result.",
     langToggle: "中文",
     docs: "Documentation",
     docsTitle: "System Documentation & Technical Specifications",
     benchmark: "Benchmark",
-    benchmarkTitle: "Discovery Performance Validation",
+    benchmarkTitle: "Strategy Illustration (Not a Measured Benchmark)",
     close: "Close",
     themeClassic: "Classic",
-    themeScience: "Scientific blue",
-    perfMode: "Performance mode"
+    themeScience: "Scientific Blue",
+    perfMode: "Display sampling"
   },
   zh: {
     title: "AMI-AL 科研加速框架",
@@ -104,7 +106,7 @@ const translations = {
     liveMetrics: "实时指标",
     iteration: "迭代轮次",
     sampledTotal: "已采样 / 总计",
-    bestConductivity: "最佳已观测值",
+    bestConductivity: "最佳已观察目标值",
     regretCurve: "优化收敛曲线 (Regret)",
     searchSpace: "搜索空间探索",
     recommendations: "近期实验推荐",
@@ -115,7 +117,7 @@ const translations = {
     acquisition: "获取函数值",
     trueValue: "真实值",
     cost: "实验代价",
-    similarityMap: "化学空间结构相似度图",
+    similarityMap: "组成描述符投影",
     methodology: "研究方法",
     representation: "特征表示",
     objective: "优化目标",
@@ -124,13 +126,13 @@ const translations = {
     pending: "待定",
     iter: "轮次",
     methodologyDesc: "可选择 RBF 高斯过程、树集成、kNN 或线性基线，在后台 Worker 中使用已采样标签训练。GP 后验标准差与集成预测分歧含义不同；模型切换不保证全局收敛或对新材料的预测精度。",
-    representationDesc: "当前原型采用 8 维成分特征和 3 维模拟描述符（电负性差、晶格畸变、配位数）。真实与 Mock 模式的组成编码不同；结构描述符尚未由晶体坐标计算，不能作为真实机理证据。",
-    objectiveDesc: "核心目标是加速发现用于高压固态绝缘的宽带隙锂氧化物。系统锁定带隙 E_g > 6.0 eV 的候选材料，旨在比传统实验发现流程实现 5 倍以上的加速比。",
+    representationDesc: "真实与Mock共用22维组成表示：5类元素属性的加权均值、总体方差、极差与覆盖率，加上有条件的ABO₃容忍因子和有效位。相同组成具有相同描述符；区分同质异构体仍需真实结构数据。",
+    objectiveDesc: "真实Materials Project记录以数据库带隙为目标。Mock使用明确标记的确定性合成分数，不是材料带隙或DFT结果。",
     langToggle: "English",
     docs: "系统文档",
     docsTitle: "系统文档与技术规范",
     benchmark: "性能基准",
-    benchmarkTitle: "发现性能验证基准",
+    benchmarkTitle: "策略示意（非实测基准）",
     close: "关闭",
     themeClassic: "经典模式",
     themeScience: "科研蓝",
@@ -239,13 +241,12 @@ export default function App() {
 
   // Performance-optimized chart data (downsampling for large datasets)
   const chartData = useMemo(() => {
-    if (pool.length <= 2000) return pool;
-    // If pool is large, show all sampled + a random sample of unsampled to keep 2000 points max
-    const sampled = pool.filter(m => m.isSampled);
-    const unsampled = pool.filter(m => !m.isSampled);
-    const sampleRate = Math.max(0.05, 2000 / unsampled.length);
-    const sampledUnsampled = unsampled.filter(() => Math.random() < sampleRate);
-    return [...sampled, ...sampledUnsampled];
+    const available = pool.filter(m => Number.isFinite(m.descriptors?.statistics.electronegativityPauling.mean)
+      && Number.isFinite(m.descriptors?.statistics.covalentRadiusAngstrom.mean));
+    if (available.length <= 2000) return available;
+    const sampled = available.filter(m => m.isSampled);
+    const unsampled = available.filter(m => !m.isSampled).sort((a, b) => hashString(a.id) - hashString(b.id));
+    return [...sampled, ...unsampled.slice(0, Math.max(0, 2000 - sampled.length))];
   }, [pool]);
 
   const runIteration = async () => {
@@ -371,7 +372,7 @@ export default function App() {
           </button>
           <button 
             onClick={reset}
-            disabled={isLoadingData}
+            disabled={isLoadingData || isIterating}
             className={`flex items-center gap-2 px-4 py-2 border ${theme === 'classic' ? 'border-[#141414] hover:bg-[#141414] hover:text-[#F5F5F0]' : 'border-[#2B6CB0] text-[#2B6CB0] hover:bg-[#2B6CB0] hover:text-white'} transition-colors text-xs uppercase font-bold tracking-tighter`}
           >
             <RotateCcw size={14} /> {t.reset}
@@ -428,12 +429,12 @@ export default function App() {
                   type="range" min="100" max="10000" step="100"
                   value={searchSpaceSize}
                   onChange={(e) => setSearchSpaceSize(parseInt(e.target.value))}
-                  disabled={state.iteration > 0 || isLoadingData}
+                  disabled={state.iteration > 0 || isLoadingData || isIterating}
                   className={`w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer ${theme === 'classic' ? 'accent-[#141414]' : 'accent-[#2B6CB0]'} mt-2`}
                 />
                 <button 
                   onClick={() => loadData(searchSpaceSize)}
-                  disabled={state.iteration > 0 || isLoadingData}
+                  disabled={state.iteration > 0 || isLoadingData || isIterating}
                   className={`w-full mt-3 py-1.5 border ${theme === 'classic' ? 'border-[#141414] hover:bg-[#141414] hover:text-white' : 'border-[#2B6CB0] text-[#2B6CB0] hover:bg-[#2B6CB0] hover:text-white'} text-[10px] font-bold uppercase tracking-tighter transition-all disabled:opacity-20`}
                 >
                   {isLoadingData ? '正在同步...' : '同步数据 (Sync Data)'}
@@ -464,6 +465,8 @@ export default function App() {
                 <select 
                   value={strategy}
                   onChange={(e) => setStrategy(e.target.value as AcquisitionStrategy)}
+                  disabled={isLoadingData || isAutoRunning || isIterating || state.iteration > 0}
+                  title={lang === "zh" ? "运行后需先重置再切换策略，以保持分数与策略一致。" : "Reset before changing strategy after a run so stored scores match the strategy."}
                   className={`w-full mt-1 ${theme === 'classic' ? 'bg-[#F5F5F0]' : 'bg-blue-50'} border-none rounded-lg p-2 text-sm font-medium focus:ring-1 ${theme === 'classic' ? 'focus:ring-[#141414]' : 'focus:ring-[#2B6CB0]'}`}
                 >
                   <option value="UCB">{lang === 'en' ? 'Upper Confidence Bound (UCB)' : '上置信界 (UCB)'}</option>
@@ -482,7 +485,7 @@ export default function App() {
                     type="range" min="1" max="20" step="1"
                     value={batchSize}
                     onChange={(e) => setBatchSize(parseInt(e.target.value))}
-                    disabled={state.iteration > 0}
+                    disabled={state.iteration > 0 || isLoadingData || isIterating}
                     className={`w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer ${theme === 'classic' ? 'accent-[#141414]' : 'accent-[#2B6CB0]'} mt-2`}
                   />
                 </div>
@@ -495,7 +498,7 @@ export default function App() {
                     type="range" min="10" max="200" step="10"
                     value={totalBudget}
                     onChange={(e) => setTotalBudget(parseInt(e.target.value))}
-                    disabled={state.iteration > 0}
+                    disabled={state.iteration > 0 || isLoadingData || isIterating}
                     className={`w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer ${theme === 'classic' ? 'accent-[#141414]' : 'accent-[#2B6CB0]'} mt-2`}
                   />
                 </div>
@@ -578,8 +581,8 @@ export default function App() {
               <ResponsiveContainer width="100%" height="90%">
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'classic' ? "#14141410" : "#2B6CB010"} />
-                  <XAxis type="number" dataKey="features[8]" name="Electronegativity Diff" hide />
-                  <YAxis type="number" dataKey="features[9]" name="Lattice Distortion" hide />
+                  <XAxis type="number" dataKey="descriptors.statistics.electronegativityPauling.mean" name="χ mean" tick={{ fontSize: 10 }} />
+                  <YAxis type="number" dataKey="descriptors.statistics.covalentRadiusAngstrom.mean" name="Covalent radius mean" unit=" Å" tick={{ fontSize: 10 }} />
                   <Tooltip 
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
@@ -588,8 +591,8 @@ export default function App() {
                           <div className={`${theme === 'classic' ? 'bg-[#141414] text-white' : 'bg-[#1A365D] text-white'} p-4 rounded-2xl shadow-2xl border-none text-[10px] space-y-1 backdrop-blur-md bg-opacity-90`}>
                             <p className="font-bold uppercase tracking-widest opacity-50 mb-2">{data.formula}</p>
                             <p>Cost: <span className="font-mono text-blue-300">{data.cost.toFixed(2)} units</span></p>
-                            <p>Band Gap: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)} eV</span></p>
-                            <p className="pt-1 opacity-50 italic">Structural clusters visualization</p>
+                            <p>{data.targetKind === "synthetic-score" ? "Synthetic score" : "Band gap"}: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)}{data.targetKind === "band-gap" ? " eV" : ""}</span></p>
+                            <p className="pt-1 opacity-50 italic">χ mean / covalent-radius mean (Å)</p>
                           </div>
                         );
                       }
@@ -624,13 +627,13 @@ export default function App() {
           <section className="rounded-3xl border border-[#d6dfce] bg-[#f5f6ec] p-5" aria-label={lang === "zh" ? "AI 优先候选" : "AI candidate shortlist"}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div><h3 className="flex items-center gap-2 text-sm font-semibold text-[#35523c]"><Sparkles size={16} />{lang === "zh" ? "让推荐走向研究方案" : "From ranking to a research plan"}</h3><p className="text-[10px] text-[#7b8971] mt-1">{lang === "zh" ? `第 ${state.iteration} 轮 · 最近一次预测的 Top-3 · 下一轮重训可能改变排序` : `Round ${state.iteration} · Top 3 from the last prediction pass · Retraining may change the order`}</p></div>
-              <button type="button" disabled={isLoadingData} onClick={() => openAdvisor(undefined, "overview")} className="text-xs font-semibold text-[#456447] px-3 py-2 rounded-lg border border-[#c4d1bb] bg-white disabled:opacity-40">{lang === "zh" ? "AI 复盘本轮" : "Review this round"}</button>
+              <button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(undefined, "overview")} className="text-xs font-semibold text-[#456447] px-3 py-2 rounded-lg border border-[#c4d1bb] bg-white disabled:opacity-40">{lang === "zh" ? "AI 复盘本轮" : "Review this round"}</button>
             </div>
             {topAdvisorCandidates.length ? <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{topAdvisorCandidates.map((m, index) => <div key={m.id} className="bg-white/85 rounded-xl border border-[#e0e5d7] p-4">
               <div className="flex justify-between items-start gap-2"><span className="font-serif text-lg italic">{m.formula}</span><span className="text-[10px] text-[#9a8a50]">0{index + 1}</span></div>
               <p className="text-[9px] text-[#8d9782] font-mono truncate mt-1">{m.id}</p>
               <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1 text-[#5e7157] font-mono my-3"><span>µ {m.predictedMean?.toFixed(3)}</span><span>σ {m.predictedStd?.toFixed(3)}</span><span>{lang === "zh" ? "成本" : "Cost"} {m.cost.toFixed(2)}</span></div>
-              <div className="flex flex-wrap gap-2"><button type="button" disabled={isLoadingData} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
+              <div className="flex flex-wrap gap-2"><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
             </div>)}</div> : <p className="text-xs leading-relaxed text-[#829077]">{lang === "zh" ? "运行一轮主动学习后，这里会展示可解析的候选。也可以打开顾问，先讨论当前材料与研究目标。" : "Run a learning step to populate this shortlist, or open the advisor to discuss your materials and research objective."}</p>}
           </section>
 
@@ -711,7 +714,7 @@ export default function App() {
                           <td className="p-4 font-mono text-xs font-bold">
                             {m.isSampled ? m.trueProperty.toFixed(4) : "???"}
                           </td>
-                          <td className="p-3 text-[10px] min-w-28"><button type="button" disabled={isLoadingData} onClick={event => { event.stopPropagation(); openAdvisor(m.id, "mechanism"); }} className="block text-[#8b6d29] hover:underline disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData} onClick={event => { event.stopPropagation(); openAdvisor(m.id); }} className="block mt-2 text-[#51774e] hover:underline disabled:opacity-40">{lang === "zh" ? "合成 / 计算方案" : "Research plan"}</button></td>
+                          <td className="p-3 text-[10px] min-w-28"><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id, "mechanism"); }} className="block text-[#8b6d29] hover:underline disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id); }} className="block mt-2 text-[#51774e] hover:underline disabled:opacity-40">{lang === "zh" ? "合成 / 计算方案" : "Research plan"}</button></td>
                         </motion.tr>
                       ))}
                   </AnimatePresence>
@@ -723,7 +726,8 @@ export default function App() {
       </main>
 
       <button type="button" onClick={() => openAdvisor()} className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-[#1e5542] text-[#f8f4df] border border-[#b9ac73] shadow-xl text-xs font-semibold" aria-label={lang === "zh" ? "打开 AI 首席材料顾问" : "Open AI materials advisor"}><Sparkles size={17} />{lang === "zh" ? "问问材料顾问" : "Ask the advisor"}</button>
-      <MaterialsAdvisor open={showAdvisor} onClose={() => setShowAdvisor(false)} input={{ pool, state, strategy, batchSize, totalBudget, isRealData, runId: advisorRunId }} lang={lang} loading={isLoadingData} request={advisorRequest} />
+      <MaterialsAdvisor open={showAdvisor} onClose={() => setShowAdvisor(false)} input={{ pool, state, strategy, batchSize, totalBudget, isRealData, runId: advisorRunId, modelConfig: modelSettings }} lang={lang} loading={isLoadingData || isIterating} request={advisorRequest} />
+      <CompositionDescriptorPanel key={`${isRealData}:${pool[0]?.id ?? "empty"}`} materials={pool} lang={lang} />
 
       {/* Research Methodology Modal / Info */}
       <footer className={`max-w-7xl mx-auto mt-12 grid grid-cols-3 gap-8 border-t ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pt-8 pb-12`}>
@@ -821,7 +825,7 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">Cost-Aware Acquisition</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            The system implements <strong>Cost-aware Bayesian Optimization</strong>. The acquisition value is normalized by the material's computational cost (modeled by atom count and structural complexity), prioritizing candidates with the highest "Value-per-DFT-Hour."
+                            The system implements <strong>cost-aware acquisition</strong>. Scores are divided by a heuristic formula-size cost based on atom counts. This proxy does not measure DFT hours or structural complexity.
                           </p>
                         </div>
                       </div>
@@ -833,13 +837,13 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">Descriptor Vector</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            Materials are featurized using a 13-dimensional vector: 10 compositional dimensions (atomic fractions) + 3 structural descriptors: <strong>Lattice Distortion</strong>, <strong>Coordination Number</strong>, and <strong>Electronegativity Difference</strong>.
+                            The offline JSON table provides Pauling electronegativity, covalent and reference ionic radii, a declared valence-electron convention and atomic hardness. Weighted mean/variance/range/coverage for each property plus conditional ABO3 t/validity yield 22 scaled model inputs. Raw physical units remain visible in the descriptor panel.
                           </p>
                         </div>
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">Polymorph Differentiation</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            Unlike simple compositional models, AMI-AL can distinguish between polymorphs (e.g., α-Li2FeSiO4 vs β-Li2FeSiO4) by analyzing structural motifs, preventing the "identical composition" ambiguity in optimization.
+                            Composition alone cannot distinguish polymorphs. Equal compositions share identical descriptors. Actual lattice, coordination or distortion information must be supplied separately rather than generated from a random number.
                           </p>
                         </div>
                       </div>
@@ -889,7 +893,7 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">代价敏感优化 (Cost-Aware BO)</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            系统实现了<strong>代价敏感贝叶斯优化</strong>。获取函数值会根据材料的计算代价（由原子数和结构复杂度建模）进行归一化，优先推荐具有最高“单位 DFT 小时价值”的候选材料。
+                            系统实现了<strong>代价感知获取函数</strong>。分数按化学式原子计数的启发式成本归一化；该估计不代表实测 DFT 耗时或真实结构复杂度。
                           </p>
                         </div>
                       </div>
@@ -901,13 +905,13 @@ export default function App() {
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">描述符向量</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            材料通过 13 维向量进行特征化：10 维成分维度（原子分数）+ 3 维结构描述符：<strong>晶格畸变</strong>、<strong>配位数</strong>和<strong>电负性差异</strong>。
+                            内置JSON提供鲍林电负性、共价/参考离子半径、约定价电子数和原子化学硬度。每类属性的加权均值、总体方差、极差和覆盖率，加上有条件ABO₃容忍因子及有效位，共22维缩放模型输入；面板保留原始物理单位。
                           </p>
                         </div>
                         <div className="space-y-2">
                           <h4 className="text-xs font-bold uppercase">同质异构体区分</h4>
                           <p className="text-xs opacity-60 leading-relaxed">
-                            与简单的成分模型不同，AMI-AL 可以通过分析结构基元来区分同质异构体（例如 α-Li2FeSiO4 与 β-Li2FeSiO4），从而消除优化过程中的“相同成分”歧义。
+                            仅凭组成不能区分同质异构体，相同组成必须得到相同描述符。真实晶格、近邻配位和畸变信息需要额外结构输入，不能以随机数代替。
                           </p>
                         </div>
                       </div>

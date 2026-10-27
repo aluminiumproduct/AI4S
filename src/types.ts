@@ -1,3 +1,5 @@
+import type { CompositionDescriptors } from "./engine/CompositionFeatures";
+
 export interface Material {
   id: string;
   formula: string;
@@ -5,6 +7,8 @@ export interface Material {
   source?: "materials-project" | "mock";
   composition: Record<string, number>;
   features: number[];
+  descriptors?: CompositionDescriptors;
+  targetKind?: "band-gap" | "synthetic-score";
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost
   predictedMean?: number;

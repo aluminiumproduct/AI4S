@@ -82,12 +82,12 @@ export default function MaterialsAdvisor({ open, onClose, input, lang, loading, 
   }
 
   useEffect(() => {
-    if (!open || !request || request.requestId === handled.current) return;
+    if (!open || loading || !request || request.requestId === handled.current) return;
     handled.current = request.requestId;
     cancel();
     setSelectedId(request.materialId ?? null);
     if (request.action) void send(advisorQuestions[request.action][lang], request.materialId ?? null);
-  }, [open, request]);
+  }, [open, request, loading]);
 
   if (!open) return null;
   const context = buildAdvisorContext(input, selectedId);
@@ -123,7 +123,7 @@ export default function MaterialsAdvisor({ open, onClose, input, lang, loading, 
       {selected && <div className="advisor-selected-metrics"><span>µ {selected.prediction_mean_mu ?? "—"}</span><span>σ {selected.uncertainty_sigma ?? "—"}</span><span>{zh ? "成本" : "Cost"} {selected.cost.value ?? "—"}</span></div>}
       <button type="button" className="advisor-preview-toggle" onClick={() => setPreview(!preview)} aria-expanded={preview}><ChevronDown size={13} />{zh ? "查看将发送的数据摘要" : "Preview shared context"}</button>
       {preview && <div className="advisor-preview"><p>{zh ? "发送当前轮次、已采样最优材料、Top-3、选中材料的组成/特征/预测和近期收敛记录；不含未采样真实标签、密钥或结构文件。" : "Shares this round, the best sampled material, top candidates, selected composition/features/predictions and recent progress. No hidden candidate labels, keys or structure files."}</p><pre>{JSON.stringify(context, null, 2)}</pre></div>}
-      <p className="advisor-evidence-note">{input.isRealData ? (zh ? "目标：数据库带隙 / eV。结构描述符和成本仍为模拟/估计量。" : "Target: database band gap / eV. Structural descriptors and costs remain simulated/estimated.") : (zh ? "演示评分与结构特征为模拟值，AI 将据此区分证据和机理假设。" : "Scores and structural features are simulated; the advisor separates evidence from hypotheses.")}</p>
+      <p className="advisor-evidence-note">{input.isRealData ? (zh ? "目标：数据库带隙 / eV。特征来自组成与参考元素常数，成本为估计量。" : "Target: database band gap / eV. Features use composition and reference constants; costs are estimates.") : (zh ? "目标为确定性合成评分；组成描述符不能区分同质异构体。" : "Target: deterministic synthetic score. Composition descriptors cannot distinguish polymorphs.")}</p>
       </div>
       <div className="advisor-actions">{actions.map(({ action, label, icon: Icon }) => <button type="button" key={action} disabled={busy || loading || (action !== "overview" && !selected)} onClick={() => { if (action === "overview") setSelectedId(null); void send(advisorQuestions[action][lang], action === "overview" ? null : selectedId); }}><Icon size={14} />{label}</button>)}</div>
     </section>
