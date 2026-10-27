@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Material } from "../types";
 import type { MPData } from "../services/MaterialsProjectService";
+import { networkIssueCode, type NetworkIssueCode } from "../services/NetworkStatus";
 
 /**
  * Real Materials Engine interfacing with Materials Project.
@@ -10,6 +11,8 @@ export class MaterialsEngine {
   private globalMax: number = 0;
   private loadVersion = 0;
   private isRealData = false;
+  private activeRequest: AbortController | undefined;
+  private loadIssue: NetworkIssueCode | null = null;
 
   private replacePool(pool: Material[], isRealData: boolean) {
     this.pool = pool;
@@ -47,9 +50,14 @@ export class MaterialsEngine {
       throw new RangeError("Material count must be a non-negative integer");
     }
     const version = ++this.loadVersion;
+    this.activeRequest?.abort();
+    const controller = new AbortController();
+    this.activeRequest = controller;
+    this.loadIssue = null;
     try {
-      const response = await axios.get(`/api/materials?limit=${limit}`);
+      const response = await axios.get(`/api/materials?limit=${limit}`, { signal: controller.signal, timeout: 65_000 });
       const data: MPData[] = response.data.data;
+      if (!Array.isArray(data)) throw Object.assign(new Error("Invalid materials response"), { code: "BAD_RESPONSE" });
       
       const pool = data.map(m => {
         const features = this.featurize(m);
@@ -74,9 +82,15 @@ export class MaterialsEngine {
       return true;
     } catch (e) {
       if (version !== this.loadVersion) return this.isRealData;
-      console.warn("Failed to load real data from API, falling back to mock.");
+      if (controller.signal.aborted || axios.isCancel(e)) return this.isRealData;
+      const error = e as { code?: string; response?: { data?: { code?: string } } };
+      this.loadIssue = networkIssueCode(error.response?.data?.code
+        ?? (error.code === "ECONNABORTED" ? "TIMEOUT" : error.code));
+      console.warn(`Materials unavailable (${this.loadIssue}); using mock data.`);
       this.replacePool(this.generateMockPool(limit), false);
       return false;
+    } finally {
+      if (this.activeRequest === controller) this.activeRequest = undefined;
     }
   }
 
@@ -125,4 +139,10 @@ export class MaterialsEngine {
 
   getPool() { return this.pool; }
   getGlobalMax() { return this.globalMax; }
+  getLoadIssue() { return this.loadIssue; }
+  cancelLoad() {
+    this.loadVersion++;
+    this.activeRequest?.abort();
+    this.activeRequest = undefined;
+  }
 }

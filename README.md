@@ -35,7 +35,10 @@
 
 ```
 AI4S/
-├── server.ts                          # Express 服务端入口，代理 MP API 与大模型 API
+├── server.ts                          # 本机服务入口，开发/生产资源与关闭清理
+├── server/
+│   ├── api.ts                        # 材料与聊天代理、取消、脱敏错误
+│   └── network.ts                    # 自动代理、HTTPS CONNECT、超时与有限重试
 ├── vite.config.ts                     # Vite 配置
 ├── src/
 │   ├── App.tsx                        # 主界面与 AL 循环逻辑
@@ -60,10 +63,10 @@ AI4S/
 
 ### 前置条件
 
-- Node.js（推荐 18+）
+- Node.js 20.19+（20 系列）或 22.12+，与依赖的 Node 要求一致
 - npm 或兼容包管理器
-- DeepSeek / Kimi / 其他兼容 OpenAI 协议的大模型 API Key
-- Materials Project API Key
+- 真实聊天需要 DeepSeek / Kimi / 其他兼容 OpenAI 协议的大模型 API Key
+- 真实材料数据需要 Materials Project API Key；没有密钥也可运行 Mock 演示
 
 ### 1. 安装依赖
 
@@ -100,7 +103,17 @@ MP_API_KEY="你的 MP API Key"
 npm run dev
 ```
 
-应用运行在：http://localhost:3000
+应用默认仅在本机运行：http://127.0.0.1:3000
+
+### 网络连接（自动处理，无需新增配置）
+
+材料与聊天接口共用同一个网络层。有现成代理环境时自动沿用，没有代理时直连；HTTPS 通过 HTTP 代理时使用 CONNECT，避免旧版 Axios 的重复重定向问题。支持已有 HTTP/HTTPS 与 SOCKS 代理，并遵守 `NO_PROXY` 的域名、端口和通配符规则。设置只从启动进程已有的环境读取，不扫描代理端口、不修改系统代理，也不要求在 `.env` 增加网络选项。
+
+材料 GET 最多重试两次暂时性错误，总请求时间有上限；聊天 POST 和 SDK 都关闭自动重试，避免重复计费。材料加载的整体上限为 60 秒，聊天为 45 秒；客户端断开或更换数据加载时会取消旧请求。代理握手同样有固定超时，正在进行的 SOCKS 握手连接最迟在该次超时内清理。401/403 不重试；较长的 `Retry-After` 会直接提示稍后重试。重定向不会自动携带 API 密钥跳转到其他地址。
+
+无法联网、未配密钥或服务拒绝访问时，页面会明确显示原因和 Mock 标记；模拟数据仍可运行，恢复连接后可点击同步；若已开始模拟迭代，先重置再同步。403 不等于密钥必然错误，也可能涉及权限或网络策略。证书校验始终开启；企业网络需要已有可信证书，项目不会通过关闭 TLS 校验来绕过限制。
+
+这些处理不能保证绕过断网、网络封锁、错误密钥或不可用代理。仅在系统界面启用了代理、但启动进程没有继承对应代理环境的场景，不会自动探测系统专用代理配置。部署为对外服务时还需单独规划认证与访问控制；当前默认仅监听本机。
 
 ---
 
@@ -112,7 +125,7 @@ npm run dev
 | `npm run build` | 构建生产包到 `dist/` |
 | `npm run preview` | 预览生产构建 |
 | `npm run lint` | 运行 TypeScript 类型检查（`tsc --noEmit`） |
-| `npm test` | 运行采样边界、数据加载与 EI 数值回归测试（无需 API 密钥） |
+| `npm test` | 运行采样、数据、EI 及网络/API回归测试；使用本地模拟服务，不需要真实密钥或上游访问 |
 | `npm run clean` | 删除 `dist/` 目录 |
 
 ---
@@ -169,9 +182,9 @@ AL_CONFIG = {
 
 **说明**：
 
-- 当前固定查询 `elements=Li,O`，`_limit` 最大安全上限为 10,000。
-- 若未配置 `MP_API_KEY`，返回 `500` 并提示未配置。
-- 若 MP API 403，可能是 API Key 不适用于新版 API（v2）或已被限速/封禁。
+- 当前固定查询 `elements=Li,O`；`limit` 必须是 1–10000 的整数，否则返回 400。
+- 若未配置 `MP_API_KEY`，返回 503，错误代码为 `MISSING_API_KEY`。
+- 失败返回稳定的 `{error, code, retryable, service}`，可附带 `upstreamStatus`。常见代码包括 `ACCESS_DENIED`、`TIMEOUT`、`PROXY_ERROR`、`DNS_ERROR`、`TLS_ERROR`、`RATE_LIMITED` 和 `REDIRECT_ERROR`，不返回密钥或上游原始错误内容。
 
 ### `POST /api/chat`
 
@@ -212,6 +225,7 @@ AL_CONFIG = {
 - 默认模型为 `deepseek-chat`。
 - 支持通过 `DEEPSEEK_BASE_URL` 切换到其他兼容端点（如 Kimi、本地 vLLM 等）。
 - 当前仅支持非流式（`stream: false`）响应。
+- 聊天使用与材料相同的自动代理与超时策略，且不会自动重试 POST；缓冲传输目前仅面向本项目 JSON 聊天，不承诺通用文件上传或 SSE 支持。
 
 ---
 

@@ -27,6 +27,7 @@ import type { AcquisitionStrategy } from "./engine/AcquisitionFunction";
 import { getStopReason, runActiveLearningStep } from "./engine/ActiveLearningLoop";
 import { Material, ALState, AL_CONFIG } from "./types";
 import { BenchmarkSimulator } from "./components/BenchmarkSimulator";
+import { networkMessage, type NetworkIssueCode } from "./services/NetworkStatus";
 
 const engine = new MaterialsEngine();
 const model = new SurrogateModel();
@@ -142,6 +143,7 @@ export default function App() {
   const [state, setState] = useState<ALState>(() => initialState(AL_CONFIG.TOTAL_BUDGET));
   const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [isRealData, setIsRealData] = useState(false);
+  const [dataIssue, setDataIssue] = useState<NetworkIssueCode | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [showBenchmark, setShowBenchmark] = useState(false);
   const [theme, setTheme] = useState<'classic' | 'science'>('classic');
@@ -157,12 +159,14 @@ export default function App() {
     runVersion.current++;
     setIsAutoRunning(false);
     setRunError(null);
+    setDataIssue(null);
     setIsLoadingData(true);
     try {
       const success = await engine.loadRealData(size);
       if (request !== loadRequest.current) return;
       setPool(engine.getPool());
       setIsRealData(success);
+      setDataIssue(engine.getLoadIssue());
       setState(initialState(totalBudget));
       setIsLoaded(true);
     } catch {
@@ -170,6 +174,7 @@ export default function App() {
       setPool([]);
       setState(initialState(totalBudget));
       setIsRealData(false);
+      setDataIssue("NETWORK_ERROR");
       setRunError(lang === "zh" ? "数据加载失败，请重试。" : "Data loading failed. Please retry.");
       setIsLoaded(true);
     } finally {
@@ -182,6 +187,7 @@ export default function App() {
     return () => {
       loadRequest.current++;
       runVersion.current++;
+      engine.cancelLoad();
     };
   }, []);
 
@@ -337,6 +343,11 @@ export default function App() {
                   {isRealData ? 'Materials Project' : '模拟数据 (Mock)'}
                 </span>
               </div>
+              {dataIssue && !isLoadingData && (
+                <p role="status" className="text-xs leading-relaxed text-amber-800 bg-amber-50 p-2 rounded-lg">
+                  {networkMessage(dataIssue, lang)} {lang === "zh" ? "当前使用模拟数据，恢复连接后可同步重试。" : "Using mock data. Sync again after the connection is restored."}
+                </p>
+              )}
               
               <div>
                 <div className="flex justify-between">

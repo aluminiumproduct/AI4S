@@ -78,3 +78,52 @@ test("empty real and fallback datasets have a safe empty maximum", async t => {
   assert.equal(engine.getPool().length, 0);
   assert.equal(engine.getGlobalMax(), 0);
 });
+
+test("fallback exposes only a safe reason and later real success clears it", async t => {
+  t.mock.method(console, "warn", () => {});
+  let shouldFail = true;
+  t.mock.method(axios, "get", async () => {
+    if (shouldFail) throw { response: { data: { code: "ACCESS_DENIED", error: "fake-secret-from-upstream" } } };
+    return realResponse(["restored"]);
+  });
+  const engine = new MaterialsEngine();
+  await engine.loadRealData(2);
+  assert.equal(engine.getLoadIssue(), "ACCESS_DENIED");
+  assert.equal(engine.getPool().length, 4);
+  shouldFail = false;
+  assert.equal(await engine.loadRealData(1), true);
+  assert.equal(engine.getLoadIssue(), null);
+});
+
+test("newer loads actively abort the previous request", async t => {
+  let previousSignal: AbortSignal | undefined;
+  t.mock.method(axios, "get", (_url: string, options: { signal: AbortSignal }) => {
+    if (!previousSignal) {
+      previousSignal = options.signal;
+      return new Promise((_resolve, reject) => options.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { code: "ERR_CANCELED" }))));
+    }
+    return Promise.resolve(realResponse(["latest"]));
+  });
+  const engine = new MaterialsEngine();
+  const previous = engine.loadRealData(2);
+  await engine.loadRealData(1);
+  await previous;
+  assert.equal(previousSignal?.aborted, true);
+  assert.deepEqual(engine.getPool().map(m => m.id), ["latest"]);
+  assert.equal(engine.getLoadIssue(), null);
+});
+
+test("explicit cancellation leaves the previous dataset and does not generate Mock", async t => {
+  t.mock.method(console, "warn", () => { throw new Error("Cancellation must not fall back to Mock"); });
+  const get = t.mock.method(axios, "get", async () => realResponse(["existing"]));
+  const engine = new MaterialsEngine();
+  await engine.loadRealData(1);
+  get.mock.mockImplementation((_url: string, options: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
+    options.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { code: "ERR_CANCELED" })));
+  }));
+  const pending = engine.loadRealData(2);
+  engine.cancelLoad();
+  await pending;
+  assert.deepEqual(engine.getPool().map(m => m.id), ["existing"]);
+  assert.equal(engine.getLoadIssue(), null);
+});
