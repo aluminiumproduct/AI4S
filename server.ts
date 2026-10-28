@@ -3,10 +3,12 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { createApiApp } from "./server/api";
 import { createNetworkClient } from "./server/network";
+import { closeSynthesisEngine } from "./server/synthesis";
 
 dotenv.config();
 
 async function startServer() {
+  const port = Number(process.env.PORT || 3000);
   const network = createNetworkClient();
   const app = createApiApp({ network });
   const vite = process.env.NODE_ENV !== "production"
@@ -17,8 +19,8 @@ async function startServer() {
   if (vite) app.use(vite.middlewares);
   else app.use(express.static("dist"));
 
-  const server = app.listen(3000, "127.0.0.1", () => {
-    console.log("Server running on http://127.0.0.1:3000");
+  const server = app.listen(port, "127.0.0.1", () => {
+    console.log(`Server running on http://127.0.0.1:${port}`);
   });
   server.once("error", () => {
     console.error("Cannot start the local server. Check that port 3000 is available.");
@@ -30,6 +32,7 @@ async function startServer() {
   const close = () => {
     if (closing) return;
     closing = true;
+    closeSynthesisEngine();
     network.close();
     server.close();
     server.closeIdleConnections();

@@ -7,12 +7,13 @@ import type { MaterialStructureRequest } from "../structures/materialStructure";
 import { MaterialStructureService } from "../services/MaterialStructureService";
 import { networkIssueCode, networkMessage } from "../services/NetworkStatus";
 import "./structure.css";
+import InlineXrd from "./InlineXrd";
 
-interface Props { open: boolean; onClose(): void; lang: "zh" | "en"; materialRequest?: MaterialStructureRequest | null; onImportMode?(): void; }
+interface Props { open: boolean; onClose(): void; lang: "zh" | "en"; materialRequest?: MaterialStructureRequest | null; onImportMode?(): void; onOpenLab?(structure: CrystalStructure): void; }
 type RemoteState = { requestId: number; status: "loading" | "ready" | "missing" | "error"; structure?: CrystalStructure; cached?: boolean; code?: string };
 const formatNumber = (value: number, digits = 4) => value.toLocaleString("en-US", { maximumFractionDigits: digits, useGrouping: false });
 
-export default function StructureWorkspace({ open, onClose, lang, materialRequest = null, onImportMode }: Props) {
+export default function StructureWorkspace({ open, onClose, lang, materialRequest = null, onImportMode, onOpenLab }: Props) {
   const t = (zh: string, en: string) => lang === "zh" ? zh : en;
   const dialog = useRef<HTMLDialogElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -170,6 +171,7 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
         </div>
           <StructureViewer structure={structure} atoms={atoms} repeats={repeats} showCell={showCell} showNeighbors={showNeighbors} cutoff={cutoff} selected={selected} active={open} onSelect={selectAtom} />
           <p className="structure-muted structure-geometry-note">{t("邻接线按当前显示原子的距离绘制，不代表化学键判定；最多显示 8000 条。超胞为周期复制，原结构不变。", "Links use distances between displayed atoms, not a chemical bond assignment; up to 8000 are shown. Supercells only change the display.")}{atoms.length > 1200 && t(" 大结构已关闭邻接线以保持响应。", " Links are disabled for large structures.")}</p>
+          <InlineXrd structure={structure} active={open} onOpen={onOpenLab ? () => onOpenLab(structure) : undefined} />
         </div>
         <aside className="structure-info">
           <h4>{t("结构概况", "Structure summary")}</h4>
