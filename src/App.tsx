@@ -49,8 +49,10 @@ import { DescriptorMap, DistillationPanel } from "./components/DistillationPanel
 import ParetoExplorer from "./components/ParetoExplorer";
 import type { CrystalStructure } from "./structures/types";
 import type { LabRequest, SynthesisFeedback } from "./synthesis/types";
-import { applySynthesisFeedback, loadFeedbackRegistry, restoreFeedback, saveFeedbackRegistry } from "./synthesis/feedback";
+import { applySynthesisFeedback, canApplySynthesisFeedback, feedbackLabel, loadFeedbackRegistry, restoreFeedback, saveFeedbackRegistry } from "./synthesis/feedback";
 import { isStrontiumTitanate } from "./synthesis/client";
+import { materialRecordKey } from "./materialContext";
+import { materialForStructure } from "./synthesis/reference";
 
 const SynthesisLab = React.lazy(() => import("./components/SynthesisLab"));
 
@@ -203,10 +205,11 @@ export default function App() {
     setHasOpenedStructure(true); setShowStructure(true);
   };
   const openSynthesisLab = (material?: Material, structure?: CrystalStructure) => {
-    const chosen = material || (structure ? pool.find(m => m.id === structure.source.materialId)
+    const chosen = material || (structure ? materialForStructure(pool, structure)
       : pool.find(m => isStrontiumTitanate(m.composition)) || advisorCandidates(pool)[0] || pool[0]);
     setLabRequest({ requestId: ++labSerial.current, materialId: chosen?.id, formula: chosen?.formula,
-      composition: chosen?.composition, source: chosen?.source, structure });
+      composition: chosen?.composition, source: chosen?.source, recordKey: chosen ? materialRecordKey(chosen) : undefined,
+      structureRef: chosen?.structureRef, structure });
     setShowStructure(false); setShowLab(true);
   };
   const [theme, setTheme] = useState<'classic' | 'science'>('classic');
@@ -220,7 +223,7 @@ export default function App() {
   const stopReason = getStopReason(pool, totalBudget);
   const [formulaMap, setFormulaMap] = useState(false);
   const distillation = useDistillation({ pool, runId: advisorRunId, iteration: state.iteration,
-    isRealData, modelConfig: modelSettings, isRunning: isAutoRunning, loading: isLoadingData });
+    isRealData, objective: hubMetadata?.objective ?? hubQuery.objective, modelConfig: modelSettings, isRunning: isAutoRunning, loading: isLoadingData });
 
   const cancelComputation = () => {
     runVersion.current++;
@@ -230,17 +233,20 @@ export default function App() {
     setIsIterating(false);
   };
   const acceptSynthesisFeedback = (feedback: SynthesisFeedback) => {
+    if (!feedback.recordKey || !pool.some(material => canApplySynthesisFeedback(material, feedback))) return false;
     cancelComputation(); setIsAutoRunning(false);
-    const registry = { ...synthesisFeedbackRef.current, [feedback.materialId]: feedback };
+    const registry = { ...synthesisFeedbackRef.current, [feedback.recordKey]: feedback };
     synthesisFeedbackRef.current = registry;
     setSynthesisFeedbacks(registry); saveFeedbackRegistry(registry);
     setPool(current => applySynthesisFeedback(current, feedback));
+    return true;
   };
   const labPanel = labRequest && <React.Suspense fallback={showLab ? <p role="status" className="fixed bottom-4 left-4 z-50 bg-white p-3 rounded shadow">正在打开合成与 XRD 实验室…</p> : null}>
     <SynthesisLab open={showLab} onClose={() => setShowLab(false)} request={labRequest} materials={pool} onFeedback={acceptSynthesisFeedback} />
   </React.Suspense>;
 
   const loadData = async (query: HubQuery) => {
+    setShowLab(false); setLabRequest(null);
     setHubQuery(query);
     setAdvisorRunId(value => value + 1);
     const request = ++loadRequest.current;
@@ -582,12 +588,12 @@ export default function App() {
             </div>
 
             <DescriptorMap key={advisorRunId} pool={pool} result={distillation.result} lang={lang}
-              enabled={formulaMap} onToggle={() => setFormulaMap(value => !value)} />
+              enabled={formulaMap} onToggle={() => setFormulaMap(value => !value)} objective={hubMetadata?.objective ?? hubQuery.objective} />
           </div>
 
           <DistillationPanel controller={distillation} lang={lang} />
 
-          {pool.some(m => m.synthesisFeedback) && <div className="synthesis-feedback-banner"><span><b>实验反馈已接入</b> · {pool.filter(m => m.synthesisFeedback).length} 个候选已更新合成先验，下一轮将使用新的约束排序。</span><button type="button" onClick={() => openSynthesisLab()}>查看实验记录 ↗</button></div>}
+          {pool.some(m => m.synthesisFeedback) && <div className="synthesis-feedback-banner"><span><b>谱图匹配反馈已接入</b> · {pool.filter(m => m.synthesisFeedback).length} 个候选已更新合成先验，下一轮将使用新的约束排序。</span><button type="button" onClick={() => openSynthesisLab()}>查看实验记录 ↗</button></div>}
           <section className="rounded-3xl border border-[#d6dfce] bg-[#f5f6ec] p-5" aria-label={lang === "zh" ? "AI 优先候选" : "AI candidate shortlist"}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div><h3 className="flex items-center gap-2 text-sm font-semibold text-[#35523c]"><Sparkles size={16} />{lang === "zh" ? "让推荐走向研究方案" : "From ranking to a research plan"}</h3><p className="text-[10px] text-[#7b8971] mt-1">{lang === "zh" ? `第 ${state.iteration} 轮 · 最近一次预测的 Top-3 · 下一轮重训可能改变排序` : `Round ${state.iteration} · Top 3 from the last prediction pass · Retraining may change the order`}</p></div>
@@ -596,7 +602,7 @@ export default function App() {
             {topAdvisorCandidates.length ? <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{topAdvisorCandidates.map((m, index) => <div key={m.id} className="bg-white/85 rounded-xl border border-[#e0e5d7] p-4">
               <div className="flex justify-between items-start gap-2"><span className="font-serif text-lg italic">{m.formula}</span><span className="text-[10px] text-[#9a8a50]">0{index + 1}</span></div>
               <p className="text-[9px] text-[#8d9782] font-mono truncate mt-1">{m.id}</p>
-              {m.synthesisFeedback && <span className={`synthesis-candidate-status ${m.synthesisFeedback.status}`}>{m.synthesisFeedback.status === "pass" ? "✓ XRD 验证通过" : "! 存在杂相"} · 先验 {m.synthesisFeedback.prior.toFixed(2)}</span>}
+              {m.synthesisFeedback && <span className={`synthesis-candidate-status ${m.synthesisFeedback.status}`}>{feedbackLabel(m.synthesisFeedback)} · 先验 {m.synthesisFeedback.prior.toFixed(2)}</span>}
               <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1 text-[#5e7157] font-mono my-3"><span>µ {m.predictedMean?.toFixed(3)}</span><span>σ {m.predictedStd?.toFixed(3)}</span><span>{lang === "zh" ? "成本" : "Cost"} {m.cost.toFixed(2)}</span></div>
               <div className="flex flex-wrap gap-2"><button type="button" onClick={() => openSynthesisLab(m)} className="synthesis-entry">⚗ {lang === "zh" ? "合成 / XRD" : "Synthesis / XRD"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
             </div>)}</div> : <p className="text-xs leading-relaxed text-[#829077]">{lang === "zh" ? "运行一轮主动学习后，这里会展示可解析的候选。也可以打开顾问，先讨论当前材料与研究目标。" : "Run a learning step to populate this shortlist, or open the advisor to discuss your materials and research objective."}</p>}
@@ -626,7 +632,7 @@ export default function App() {
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.uncertainty}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.acquisition}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.trueValue}</th>
-                    <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "合成验证" : "Synthesis"}</th>
+                    <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "谱图匹配反馈" : "Synthesis"}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "AI 顾问" : "AI Advisor"}</th>
                   </tr>
                 </thead>
@@ -682,7 +688,7 @@ export default function App() {
                           <td className="p-4 font-mono text-xs font-bold">
                             {m.isSampled ? `${m.trueProperty.toFixed(4)} ${objectiveSpec.unit}` : "???"}
                           </td>
-                          <td className="p-3 text-[10px]"><button type="button" onClick={event => { event.stopPropagation(); openSynthesisLab(m); }} className="synthesis-entry">{m.synthesisFeedback ? (m.synthesisFeedback.status === "pass" ? "✓ 已验证" : "! 杂相预警") : "合成 / XRD"}</button></td>
+                          <td className="p-3 text-[10px]"><button type="button" onClick={event => { event.stopPropagation(); openSynthesisLab(m); }} className="synthesis-entry">{m.synthesisFeedback ? (feedbackLabel(m.synthesisFeedback)) : "合成 / XRD"}</button></td>
                           <td className="p-3 text-[10px] min-w-28"><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id, "mechanism"); }} className="block text-[#8b6d29] hover:underline disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id); }} className="block mt-2 text-[#51774e] hover:underline disabled:opacity-40">{lang === "zh" ? "合成 / 计算方案" : "Research plan"}</button></td>
                         </motion.tr>
                       ))}

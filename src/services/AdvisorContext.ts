@@ -3,6 +3,7 @@ import type { AcquisitionStrategy } from "../engine/AcquisitionFunction";
 import { FEATURE_DEFINITIONS, FEATURE_SCHEMA_VERSION } from "../engine/CompositionFeatures";
 import { MODEL_CATALOG, type ModelConfig } from "../engine/models/config";
 import { OBJECTIVES, type HubMetadata, type HubQuery } from "../dataHub";
+import { canApplySynthesisFeedback } from "../synthesis/feedback";
 
 export type AdvisorAction = "overview" | "mechanism" | "synthesis" | "dft";
 export type AdvisorLanguage = "zh" | "en";
@@ -59,10 +60,12 @@ function describeMaterial(material: Material, isRealData: boolean) {
     prediction_mean_mu: finite(material.predictedMean),
     uncertainty_sigma: finite(material.predictedStd),
     acquisition_score: finite(material.acquisitionValue),
-    synthesis_feedback: material.synthesisFeedback ? {
+    synthesis_feedback: material.synthesisFeedback && canApplySynthesisFeedback(material, material.synthesisFeedback) ? {
       status: material.synthesisFeedback.status, score: finite(material.synthesisFeedback.score),
       main_phase_fit_percent: finite(material.synthesisFeedback.mainFraction), prior: finite(material.synthesisFeedback.prior),
-      source: material.synthesisFeedback.demo ? "demo spectrum" : "uploaded experimental spectrum",
+      source: material.synthesisFeedback.demo ? "demo spectrum; Mock-only feedback" : "user-uploaded spectrum; origin not independently verified",
+      record_key: material.synthesisFeedback.recordKey,
+      reference: structuredClone(material.synthesisFeedback.reference),
     } : null,
     cost: { value: finite(material.cost), unit: "relative proxy units", provenance: "heuristic estimate, not measured time or money" },
     features: material.features.slice(0, 32).map((value, index) => ({
@@ -85,7 +88,7 @@ export function buildAdvisorContext(input: AdvisorInput, selectedId?: string | n
   const hubMode = !!requested || !!hub;
   const objective = requested ? OBJECTIVES[requested.objective] : hub ? OBJECTIVES[hub.objective] : null;
   const direction = objective?.direction ?? "max";
-  const synthesisActive = pool.some(material => material.synthesisFeedback);
+  const synthesisActive = pool.some(material => material.synthesisFeedback && canApplySynthesisFeedback(material, material.synthesisFeedback));
   const baseFormula = strategy === "UCB" ? (direction === "min" ? "(-mu + 2 * sigma) / estimated_cost; maximize negative LCB utility" : "(mu + 2 * sigma) / estimated_cost")
     : strategy === "EI" ? (direction === "min" ? "Normal-surrogate E[max(best_observed - f, 0)] / estimated_cost" : "Normal-surrogate E[max(f - best_observed, 0)] / estimated_cost")
       : strategy === "Uncertainty" ? "sigma / estimated_cost" : "stored uniform random draw / estimated_cost; not a performance ranking";

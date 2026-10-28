@@ -59,7 +59,7 @@ export function createApiApp({ network, env = process.env, materialsEndpoint = "
   const app = express();
   app.use("/api/hub", createHubRouter({ hub, network, env, materialsEndpoint, deadline: materialsDeadlineMs, requestScope }));
   if (umlip) app.use("/api/umlip", umlipRouter(umlip));
-  app.use("/api/synthesis", createSynthesisRouter({ network, env, materialsEndpoint }));
+  app.use("/api/synthesis", createSynthesisRouter({ network, env, materialsEndpoint, hub }));
   app.use(express.json({ limit: "100kb" }));
   const structures = new StructureCache<{ record: unknown; fetchedAt: string }>();
 

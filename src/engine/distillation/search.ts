@@ -1,5 +1,6 @@
 import { SurrogateModel } from "../SurrogateModel";
 import { hashString } from "../SeededRandom";
+import { targetSpec } from "../../materialContext";
 import { PHYSICAL_FEATURES } from "./features";
 import { splitCompositionGroups } from "./partitions";
 export { splitCompositionGroups } from "./partitions";
@@ -241,6 +242,6 @@ export async function searchPhysicalFormulas(snapshot: DistillationSnapshot, inp
     ridgeBaseline: metrics(test, truth, samePopulation(test.map(row => ridge.predict(row).mean))),
     evaluatedCandidates: evaluated, l1Selected, searchMs: performance.now() - started, excludedFeatures,
     alternatives: models.map(model => ({ complexity: model.complexity, tuningRmse: model.tuningRmse })),
-    points, invalidProjection, highThreshold: observed[Math.floor((observed.length - 1) * 0.8)],
+    points, invalidProjection, highThreshold: observed[Math.floor((observed.length - 1) * (targetSpec(snapshot.objective).direction === "min" ? 0.2 : 0.8))],
   };
 }

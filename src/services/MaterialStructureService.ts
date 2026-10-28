@@ -26,6 +26,7 @@ export class MaterialStructureService {
       if (ref && (data.meta.dataset !== ref.dataset || data.meta.revision !== ref.revision)) throw new Error("Structure revision does not match request");
       structure = normalizeMaterialStructure(data.data, material.id, data.meta.fetchedAt, !!ref);
       if (ref) {
+        structure.source.recordRef = { ...ref };
         structure.source.providerLabel = sourceLabel(ref.dataset);
         if (data.meta.provenance) structure.source.provenance = structuredClone(data.meta.provenance);
       }

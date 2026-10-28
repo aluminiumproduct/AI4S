@@ -1,4 +1,5 @@
 import type { ModelConfig } from "../models/config";
+import type { MaterialLineage, TargetKind, targetSpec } from "../../materialContext";
 
 /** Exponents of energy (eV) and length (Å); electron counts are dimensionless. */
 export type Dimension = readonly [number, number];
@@ -23,6 +24,7 @@ export interface QueryPoint {
   group: string;
   values: (number | null)[];
   features: number[];
+  lineage?: MaterialLineage;
 }
 export interface SamplePoint extends QueryPoint { label: number }
 export type DistillationTarget = "observed" | "teacher";
@@ -51,7 +53,8 @@ export interface DistillationSnapshot {
   runId: number;
   iteration: number;
   target: DistillationTarget;
-  objective: "band-gap" | "synthetic-score";
+  objective: TargetKind;
+  objectiveMeta?: ReturnType<typeof targetSpec>;
   modelConfig: ModelConfig;
   samples: SamplePoint[];
   queries: QueryPoint[];

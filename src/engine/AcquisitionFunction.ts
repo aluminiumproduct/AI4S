@@ -51,7 +51,7 @@ export class AcquisitionFunction {
     if (isCostAware && material.cost > 0) {
       value /= material.cost;
     }
-    return constrainAcquisition(value, feasibilityPrior(material.synthesisFeedback));
+    return constrainAcquisition(value, feasibilityPrior(material.synthesisFeedback, material));
   }
 
   private static expectedImprovement(mean: number, std: number, best: number): number {

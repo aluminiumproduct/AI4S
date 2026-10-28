@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { UmlipService } from "../server/umlip/service";
 import { demoConfigurations } from "../src/umlip/examples";
 
+dotenv.config({ quiet: true });
 dotenv.config({ path: ".env.umlip.local", quiet: true });
 const service = new UmlipService({ root: process.cwd(), env: process.env });
 const run = service.start(demoConfigurations(), { budget: 4, initialSamples: 2, batchSize: 2, fmax: 0.08, maxSteps: 100 });

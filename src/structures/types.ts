@@ -1,4 +1,4 @@
-import type { Provenance } from "../dataHub";
+import type { Provenance, StructureRef } from "../dataHub";
 export type Vec3 = [number, number, number];
 export const MAX_STRUCTURE_BYTES = 5 * 1024 * 1024;
 /** Row vectors in Å. Cartesian position = fractional position × lattice. */
@@ -23,6 +23,7 @@ export interface CrystalStructure {
     filename: string;
     format: "cif" | "poscar" | "materials-project" | "data-hub";
     providerLabel?: string;
+    recordRef?: StructureRef;
     provenance?: Provenance;
     materialId?: string;
     formula?: string;

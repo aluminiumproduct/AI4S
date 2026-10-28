@@ -10,6 +10,8 @@ export interface Material {
   fidelity?: Fidelity;
   methodMeta?: string;
   datasetSource?: HubSource;
+  recordRevision?: string;
+  structureHash?: string;
   provenance?: Provenance;
   structureRef?: StructureRef;
   pairedDft?: number;
@@ -21,6 +23,8 @@ export interface Material {
   targetKind?: ObjectiveId | "synthetic-score";
   energyAboveHull?: number | null;
   formationEnergyPerAtom?: number | null;
+  objectiveValues?: Partial<Record<ObjectiveId, number>>;
+  objectiveUnits?: Partial<Record<ObjectiveId, string>>;
   synthesisFeedback?: SynthesisFeedback;
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost

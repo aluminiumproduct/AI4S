@@ -7,9 +7,12 @@ import type { SynthesisFeedback } from "../src/synthesis/types";
 import { closeSynthesisEngine, demoPreflight, runSynthesis } from "../server/synthesis";
 import { runActiveLearningStep } from "../src/engine/ActiveLearningLoop";
 import { material, state } from "./fixtures";
+import { materialRecordKey } from "../src/materialContext";
 
 const feedback: SynthesisFeedback = { materialId: "test-5", formula: "Li2O", status: "impurity", score: 90, mainFraction: 40,
-  prior: .3, sampleId: "S-1", filename: "sample.xy", createdAt: "2026-10-28T00:00:00Z", demo: true };
+  prior: .3, sampleId: "S-1", filename: "sample.xy", createdAt: "2026-10-28T00:00:00Z", demo: true,
+  schemaVersion: 2, recordKey: materialRecordKey(material(5, { source: "mock" })),
+  reference: { kind: "demo", structureHash: "a".repeat(64), recordKey: materialRecordKey(material(5, { source: "mock" })) } };
 
 test("the perovskite demo is associated only with the actual SrTiO3 composition", () => {
   assert.equal(isStrontiumTitanate({ Sr: 2, Ti: 2, O: 6 }), true);
@@ -37,8 +40,8 @@ test("preflight responds to energy, firing temperature and atmosphere", () => {
   assert.equal(demoPreflight({ Ti: 1, O: 2 }, 900, "air", 0).source, "materials-project");
 });
 
-test("experimental feedback downweights ranking without changing labels or sampling; repeated application is idempotent", () => {
-  const original = [material(5, { acquisitionValue: 10 })];
+test("bound demonstration feedback downweights Mock ranking without changing labels; repeated application is idempotent", () => {
+  const original = [material(5, { source: "mock", acquisitionValue: 10 })];
   const next = applySynthesisFeedback(original, feedback);
   assert.equal(next[0].acquisitionValue, 3);
   assert.equal(next[0].trueProperty, original[0].trueProperty);
@@ -49,7 +52,7 @@ test("experimental feedback downweights ranking without changing labels or sampl
 });
 
 test("feedback influences the actual next AL sample, not just table ordering", async () => {
-  const pool = Array.from({ length: 7 }, (_, i) => material(i, { isSampled: i < 5, iteration: i < 5 ? 0 : undefined }));
+  const pool = Array.from({ length: 7 }, (_, i) => material(i, { source: "mock", isSampled: i < 5, iteration: i < 5 ? 0 : undefined }));
   const constrained = applySynthesisFeedback(pool, feedback);
   const result = await runActiveLearningStep(constrained, state({ iteration: 1, sampledCount: 5 }),
     { totalBudget: 7, batchSize: 1, strategy: "UCB" }, { train() {}, predict() { return { mean: 10, std: .5 }; } });
@@ -57,7 +60,7 @@ test("feedback influences the actual next AL sample, not just table ordering", a
   assert.equal(result.pool[6].isSampled, true);
 });
 
-test("pymatgen diffraction and controlled mixtures recover peak positions, phase contributions and zero offset", { skip: !existsSync(".venv/bin/python") }, async t => {
+test("pymatgen diffraction and controlled mixtures recover peak positions, phase contributions and zero offset", { skip: !existsSync(process.env.AI4S_PYTHON || ".venv/bin/python") }, async t => {
   t.after(closeSynthesisEngine);
   const xrd = await runSynthesis("xrd", xrdPayload(demoCrystal()));
   assert.ok(Math.abs(xrd.pattern.peaks[0].twoTheta-22.77210344) < 1e-5);

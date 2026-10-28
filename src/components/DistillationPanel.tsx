@@ -5,6 +5,7 @@ import type { DistillationController } from "../engine/distillation/useDistillat
 import type { DistillationResult, Metrics } from "../engine/distillation/types";
 import { parseSupplements } from "../engine/distillation/features";
 import { hashString } from "../engine/SeededRandom";
+import { targetSpec, type TargetKind } from "../materialContext";
 import "./distillation.css";
 
 const number = (value: number | null | undefined, digits = 4) => value == null || !Number.isFinite(value) ? "—" : Number(value.toPrecision(digits)).toString();
@@ -12,9 +13,11 @@ const labels = (lang: "zh" | "en") => (zh: string, en: string) => lang === "zh" 
 
 export function DistillationPanel({ controller: c, lang }: { controller: DistillationController; lang: "zh" | "en" }) {
   const t = labels(lang), result = c.result;
+  const objective = result ? targetSpec(result.objective) : c.objective;
   const [supplementText, setSupplementText] = useState("{}");
   const [supplementError, setSupplementError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  useEffect(() => { setSupplementText("{}"); setSupplementError(null); }, [c.datasetIdentity]);
   const metricRows: { label: string; value: Metrics | undefined }[] = [
     { label: t("解析模型", "Symbolic model"), value: result?.metrics },
     { label: t("均值基线", "Mean baseline"), value: result?.meanBaseline },
@@ -74,16 +77,16 @@ export function DistillationPanel({ controller: c, lang }: { controller: Distill
     </div>}
     {result && <>
       <div className="distillation-result-meta">
-        <span><Sparkles size={13} />{result.objective === "band-gap" ? t("Materials Project 带隙 / eV", "Materials Project band gap / eV") : t("Mock 合成评分 / a.u.", "Mock synthetic score / a.u.")}</span>
+        <span><Sparkles size={13} />{objective[lang]} / {objective.unit} · {objective.direction === "min" ? "↓ Minimize" : "↑ Maximize"}</span>
         <span>{t("快照", "Snapshot")} {result.snapshotId} · {t("第", "Round")} {result.iteration}{t("轮", "")} · {result.sampledRecords} {t("条", "records")}</span>
         <span>{number(result.searchMs / 1000, 3)} s</span>
       </div>
       <div className="distillation-formulas">{result.formulas.map((formula, index) => <article key={index}>
         <div className="distillation-formula-label"><span>Φ<sub>{index + 1}</sub></span><span>{formula.complexity} {t("个表达式节点", "nodes")}</span></div>
         <p className="distillation-equation">Φ<sub>{index + 1}</sub> = {formula.text}</p>
-        <div className="distillation-term-meta"><span>{t("描述符单位", "Units")}: {formula.unit}</span><span>b<sub>{index + 1}</sub> = {number(formula.coefficient, 6)} [{result.objective === "band-gap" ? "eV" : "a.u."} / ({formula.unit})]</span></div>
+        <div className="distillation-term-meta"><span>{t("描述符单位", "Units")}: {formula.unit}</span><span>b<sub>{index + 1}</sub> = {number(formula.coefficient, 6)} [{objective.unit} / ({formula.unit})]</span></div>
       </article>)}</div>
-      <div className="distillation-readout">ŷ = {number(result.intercept, 6)} {result.formulas.map((formula, i) => <span key={i}>{formula.coefficient >= 0 ? " + " : " − "}{number(Math.abs(formula.coefficient), 6)} Φ<sub>{i + 1}</sub></span>)} <small>{result.objective === "band-gap" ? " eV" : " a.u."}</small></div>
+      <div className="distillation-readout">ŷ = {number(result.intercept, 6)} {result.formulas.map((formula, i) => <span key={i}>{formula.coefficient >= 0 ? " + " : " − "}{number(Math.abs(formula.coefficient), 6)} Φ<sub>{i + 1}</sub></span>)} <small> {objective.unit}</small></div>
       <div className="distillation-validation">
         <div><h3><FlaskConical size={15} />{t("保留测试组检验", "Held-out composition groups")}</h3>
           <p>{t("发现 / 选择 / 测试组成数", "Discovery / tuning / test groups")}: {result.split.discovery.length} / {result.split.tuning.length} / {result.split.test.length}</p>
@@ -131,10 +134,11 @@ function hull(points: [number, number][]): [number, number][] {
   return [...a, ...b];
 }
 
-export function DescriptorMap({ pool, result, lang, enabled, onToggle }: {
-  pool: Material[]; result: DistillationResult | null; lang: "zh" | "en"; enabled: boolean; onToggle(): void;
+export function DescriptorMap({ pool, result, lang, enabled, onToggle, objective = "band-gap" }: {
+  pool: Material[]; result: DistillationResult | null; lang: "zh" | "en"; enabled: boolean; onToggle(): void; objective?: TargetKind;
 }) {
   const t = labels(lang), symbolic = enabled && Boolean(result);
+  const direction = targetSpec(symbolic && result ? result.objective : objective).direction;
   const [predictionColor, setPredictionColor] = useState(false);
   const [hovered, setHovered] = useState<MapPoint | null>(null);
   useEffect(() => setHovered(null), [pool, result, symbolic, predictionColor]);
@@ -151,14 +155,14 @@ export function DescriptorMap({ pool, result, lang, enabled, onToggle }: {
     return [...candidates.slice(0, Math.max(0, 1800 - sampled.length)), ...sampled];
   }, [pool, result, symbolic]);
   const observed = points.filter(point => point.observed !== null).map(point => point.observed!).sort((a, b) => a - b);
-  const threshold = symbolic && result ? result.highThreshold : observed[Math.floor((observed.length - 1) * 0.8)] ?? Infinity;
+  const threshold = symbolic && result ? result.highThreshold : observed[Math.floor((observed.length - 1) * (direction === "min" ? 0.2 : 0.8))] ?? (direction === "min" ? -Infinity : Infinity);
   const bounds = (values: number[]) => { const min = Math.min(...values), max = Math.max(...values); const pad = Math.max((max - min) * 0.08, Math.abs(min) * 0.02, 1e-6); return [min - pad, max + pad]; };
   const xBounds = points.length ? bounds(points.map(point => point.x)) : [0, 1];
   const yBounds = points.length ? bounds(points.map(point => point.y)) : [0, 1];
   const sx = (x: number) => 66 + (x - xBounds[0]) / (xBounds[1] - xBounds[0]) * 654;
   const sy = (y: number) => 264 - (y - yBounds[0]) / (yBounds[1] - yBounds[0]) * 234;
   const high = (point: MapPoint) => (predictionColor ? point.prediction : point.observed) !== null
-    && (predictionColor ? point.prediction! : point.observed!) >= threshold;
+    && (direction === "min" ? (predictionColor ? point.prediction! : point.observed!) <= threshold : (predictionColor ? point.prediction! : point.observed!) >= threshold);
   const island = symbolic ? hull(points.filter(high).map(point => [sx(point.x), sy(point.y)])) : [];
   const xLabel = symbolic && result ? "Φ₁ = " + result.axes[0].text : t("平均电负性 χ", "Mean electronegativity");
   const yLabel = symbolic && result ? result.axes[1] ? "Φ₂ = " + result.axes[1].text : t("单描述符（第二轴为 0）", "One descriptor (second axis = 0)") : t("平均共价半径 / Å", "Mean covalent radius / Å");
@@ -184,9 +188,9 @@ export function DescriptorMap({ pool, result, lang, enabled, onToggle }: {
       </svg>
       {hovered && <div className="descriptor-tooltip"><strong>{hovered.formula}</strong><span>{hovered.id}</span><span>Φ₁ / x: {number(hovered.x)} · Φ₂ / y: {number(hovered.y)}</span><span>{hovered.observed === null ? t("未采样，真实标签隐藏", "Unsampled; true label hidden") : t("已采样性质", "Observed") + ": " + number(hovered.observed)}</span><span>{t("预测", "Prediction")}: {number(hovered.prediction)}</span></div>}
     </div>
-    <footer><div><i className="descriptor-legend-green" />{t("已采样", "Sampled")}<i className="descriptor-legend-gold" />{t("高分区间", "High scores")}{symbolic && <><i className="descriptor-legend-test" />{t("测试组", "Test groups")}</>}</div>
+    <footer><div><i className="descriptor-legend-green" />{t("已采样", "Sampled")}<i className="descriptor-legend-gold" />{t("优选区间", "Preferred range")}{symbolic && <><i className="descriptor-legend-test" />{t("测试组", "Test groups")}</>}</div>
       <label><input type="checkbox" checked={predictionColor} onChange={event => setPredictionColor(event.target.checked)} />{t("按预测高亮", "Highlight predictions")}</label></footer>
-    {symbolic && result ? <p className="descriptor-map-note">{predictionColor ? t("金色区域基于公式预测", "Gold region uses predictions") : t("金色区域基于高分观测点", "Gold region uses high observed values")} · {t("第", "Round")} {result.iteration}{t("轮快照", " snapshot")} · {result.invalidProjection} {t("条候选缺值/越界", "missing/out-of-domain candidates")}</p>
+    {symbolic && result ? <p className="descriptor-map-note">{predictionColor ? t("金色区域基于公式预测", "Gold region uses predictions") : t("金色区域按目标方向筛选观测点", "Gold region follows the objective direction")} · {t("第", "Round")} {result.iteration}{t("轮快照", " snapshot")} · {result.invalidProjection} {t("条候选缺值/越界", "missing/out-of-domain candidates")}</p>
       : <p className="descriptor-map-note">{t("公式生成后可一键切换。候选真实标签不参与着色。", "Switch axes once formulas are ready. Hidden candidate labels are not used for coloring.")}</p>}
   </section>;
 }

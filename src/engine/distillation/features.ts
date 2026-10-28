@@ -1,6 +1,7 @@
 import type { Material } from "../../types";
 import { ELEMENT_TABLE_VERSION, FEATURE_SCHEMA_VERSION, extractCompositionFeatures, normalizeComposition, PROPERTY_DEFINITIONS } from "../CompositionFeatures";
 import { hashString } from "../SeededRandom";
+import { materialLineage, targetSpec } from "../../materialContext";
 import type { ModelConfig } from "../models/config";
 import { DEFAULT_DISTILLATION_OPTIONS, type DistillationOptions, type DistillationSnapshot, type DistillationTarget,
   type PartitionAssignments, type PhysicalFeature, type QueryPoint, type SamplePoint, type Supplements } from "./types";
@@ -64,6 +65,9 @@ export function buildDistillationSnapshot(pool: Material[], input: {
   partitions?: PartitionAssignments; searchOptions?: DistillationOptions;
 }): DistillationSnapshot {
   if (pool.length > 20_000) throw new RangeError("公式投影最多支持 20000 条候选");
+  targetSpec(input.objective);
+  const cohorts = new Set(pool.filter(row => row.isSampled && row.cohort).map(row => row.cohort));
+  if (cohorts.size > 1) throw new Error("不能混合不同条件组蒸馏公式");
   const samples: SamplePoint[] = [], queries: QueryPoint[] = [];
   const supplements: DistillationSnapshot["supplements"] = [];
   for (const material of pool) {
@@ -81,7 +85,7 @@ export function buildDistillationSnapshot(pool: Material[], input: {
     });
     const query: QueryPoint = {
       id: material.id, formula: material.formula, group: compositionGroup(material.composition),
-      values, features: [...material.features],
+      values, features: [...material.features], lineage: materialLineage(material),
     };
     queries.push(query);
     if (material.isSampled) {
@@ -92,7 +96,7 @@ export function buildDistillationSnapshot(pool: Material[], input: {
   const data = {
     formatVersion: "ai4s-formula-snapshot-1" as const, featureSchemaVersion: FEATURE_SCHEMA_VERSION,
     elementTableVersion: ELEMENT_TABLE_VERSION, runId: input.runId, iteration: input.iteration,
-    target: input.target, objective: input.objective, modelConfig: { ...input.modelConfig },
+    target: input.target, objective: input.objective, objectiveMeta: targetSpec(input.objective), modelConfig: { ...input.modelConfig },
     partitions: { ...input.partitions }, searchOptions: { ...DEFAULT_DISTILLATION_OPTIONS, ...input.searchOptions },
     samples, queries, supplements,
   };

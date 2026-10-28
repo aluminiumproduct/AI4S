@@ -12,8 +12,6 @@ dotenv.config();
 dotenv.config({ path: ".env.umlip.local" });
 
 async function startServer() {
-  const port = Number(process.env.PORT ?? 3000);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new RangeError("Invalid PORT");
   const network = createNetworkClient();
   const umlip = new UmlipService({ root: process.cwd(), env: process.env });
   const hub = new HubStore(resolve(process.env.AI4S_HUB_DB || "data/ai4s_hub.db"));

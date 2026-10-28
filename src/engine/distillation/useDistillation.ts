@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Material } from "../../types";
 import type { ModelConfig } from "../models/config";
+import { targetSpec, type TargetKind } from "../../materialContext";
 import { buildDistillationSnapshot, compositionGroup } from "./features";
 import { DistillationWorkerClient } from "./DistillationWorkerClient";
 import { freezePartitions, splitCompositionGroups } from "./partitions";
 import { DEFAULT_DISTILLATION_OPTIONS, type DistillationResult, type DistillationTarget, type PartitionAssignments, type Supplements } from "./types";
 
 export function useDistillation(input: { pool: Material[]; runId: number; iteration: number; isRealData: boolean;
-  modelConfig: ModelConfig; isRunning: boolean; loading: boolean }) {
+  objective?: TargetKind; modelConfig: ModelConfig; isRunning: boolean; loading: boolean }) {
+  const objective = input.objective ?? (input.isRealData ? "band-gap" : "synthetic-score");
   const [options, setOptions] = useState({ ...DEFAULT_DISTILLATION_OPTIONS });
   const [target, setTarget] = useState<DistillationTarget>("observed");
   const [supplements, setSupplements] = useState<Supplements>({});
@@ -19,12 +21,14 @@ export function useDistillation(input: { pool: Material[]; runId: number; iterat
   const client = useRef<DistillationWorkerClient | null>(null);
   const serial = useRef(0), lastRequested = useRef(0);
   const partitions = useRef<PartitionAssignments>({});
-  const partitionIdentity = JSON.stringify([input.runId, input.isRealData, options.seed]);
-  const identity = JSON.stringify([input.runId, input.isRealData, input.modelConfig, options, target, supplements]);
+  const partitionIdentity = JSON.stringify([input.runId, objective, options.seed]);
+  const identity = JSON.stringify([input.runId, objective, input.modelConfig, options, target, supplements]);
   const identityRef = useRef(identity); identityRef.current = identity;
   const sampled = useMemo(() => input.pool.filter(material => material.isSampled), [input.pool]);
   const materialIds = useMemo(() => new Set(input.pool.map(material => material.id)), [input.pool]);
   const groups = useMemo(() => new Set(sampled.map(material => compositionGroup(material.composition))).size, [sampled]);
+
+  useEffect(() => { setSupplements({}); }, [input.runId, objective]);
 
   useEffect(() => { partitions.current = {}; }, [partitionIdentity]);
   useEffect(() => {
@@ -41,7 +45,7 @@ export function useDistillation(input: { pool: Material[]; runId: number; iterat
     try {
       partitions.current = freezePartitions(splitCompositionGroups(sampled.map(material => ({ group: compositionGroup(material.composition) })), options.seed, partitions.current));
       const snapshot = buildDistillationSnapshot(input.pool, { runId: input.runId, iteration: input.iteration,
-        target, objective: input.isRealData ? "band-gap" : "synthetic-score", modelConfig: input.modelConfig, supplements,
+        target, objective, modelConfig: input.modelConfig, supplements,
         partitions: partitions.current, searchOptions: options });
       if (!client.current) client.current = new DistillationWorkerClient();
       const response = await client.current.run(snapshot, options);
@@ -52,7 +56,7 @@ export function useDistillation(input: { pool: Material[]; runId: number; iterat
     } finally {
       if (request === serial.current && identityRef.current === capturedIdentity) setBusy(false);
     }
-  }, [busy, identity, input.pool, input.loading, input.runId, input.iteration, input.isRealData, input.modelConfig, sampled.length, groups, options, target, supplements]);
+  }, [busy, identity, input.pool, input.loading, input.runId, input.iteration, objective, input.modelConfig, sampled.length, groups, options, target, supplements]);
 
   useEffect(() => {
     if (!automatic || busy || input.loading || sampled.length < options.minSamples || groups < 8) return;
@@ -65,6 +69,6 @@ export function useDistillation(input: { pool: Material[]; runId: number; iterat
   };
   return { options, setOptions, target, setTarget, supplements, setSupplements, automatic, setAutomatic,
     result, busy, error, cancelled, run, cancel, sampleCount: sampled.length, groupCount: groups,
-    materialIds, ready: sampled.length >= options.minSamples && groups >= 8 && !input.loading };
+    materialIds, datasetIdentity: JSON.stringify([input.runId, objective]), objective: targetSpec(objective), ready: sampled.length >= options.minSamples && groups >= 8 && !input.loading };
 }
 export type DistillationController = ReturnType<typeof useDistillation>;

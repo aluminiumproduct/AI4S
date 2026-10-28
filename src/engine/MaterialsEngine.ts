@@ -5,6 +5,8 @@ import { networkIssueCode, type NetworkIssueCode } from "../services/NetworkStat
 import { extractCompositionFeatures } from "./CompositionFeatures";
 import { createSeededRandom } from "./SeededRandom";
 import { OBJECTIVES, bestTarget, hubQueryString, type HubMetadata, type HubQuery, type HubResponse, type ObjectiveDirection } from "../dataHub";
+import { normalizeMaterialStructure } from "../structures/materialStructure";
+import { structureFingerprint } from "../structures/fingerprint";
 
 function formulaCost(composition: Record<string, number>) {
   const count = Object.values(composition).reduce((sum, amount) => sum + amount, 0);
@@ -43,20 +45,28 @@ export class MaterialsEngine {
       const { data, meta } = response.data ?? {};
       if (!Array.isArray(data) || meta?.objective !== query.objective || meta?.requestedSource !== query.source
         || !["mp-live", "mp-snapshot", "catalysis-hub", "dual-fidelity"].includes(meta?.effectiveSource)) throw new Error("Invalid Data Hub response");
-      const pool: Material[] = data.map(record => {
+      const pool: Material[] = await Promise.all(data.map(async record => {
         const value = record.values?.[query.objective];
         if (!Number.isFinite(value) || record.units?.[query.objective] !== OBJECTIVES[query.objective].unit
           || !["MP-DFT", "Catalysis-Hub", "GNoME-Extrapolated", "Lab-Experiment"].includes(record.source)
           || !["low-dft", "mid-umlip", "high-exp"].includes(record.fidelity)
           || !record.provenance || !/^[a-f0-9]{64}$/.test(record.revision ?? "")) throw new Error("Invalid Data Hub observation");
-        return { id: record.id, formula: record.formula, composition: record.composition,
+        const material: Material = { id: record.id, formula: record.formula, composition: record.composition,
           ...extractCompositionFeatures(record.composition), source: record.source, fidelity: record.fidelity,
           methodMeta: record.methodMeta, provenance: record.provenance, cohort: record.cohort, comparisonBasis: record.comparisonBasis, datasetSource: meta.effectiveSource,
           targetKind: query.objective, trueProperty: value!, cost: formulaCost(record.composition), isSampled: false,
+          recordRevision: record.revision,
+          objectiveValues: { ...record.values }, objectiveUnits: { ...record.units },
+          energyAboveHull: Number.isFinite(record.values["energy-above-hull"]) ? record.values["energy-above-hull"]! : null,
+          formationEnergyPerAtom: Number.isFinite(record.values["formation-energy"]) ? record.values["formation-energy"]! : null,
           pairedDft: record.pairedDft,
           ...(record.structure ? { structureRef: { dataset: meta.effectiveSource === "mp-live" ? "mp-snapshot" as const : meta.effectiveSource,
             id: record.id, revision: record.revision! } } : {}) };
-      });
+        if (record.structure) material.structureHash = await structureFingerprint(normalizeMaterialStructure({
+          material_id: record.id, formula_pretty: record.formula, structure: record.structure, symmetry: record.symmetry,
+        }, record.id, meta.fetchedAt ?? new Date().toISOString(), true));
+        return material;
+      }));
       if (new Set(pool.map(m => m.id)).size !== pool.length) throw new Error("Duplicate Data Hub IDs");
       if (version !== this.loadVersion || controller.signal.aborted) return null;
       this.replacePool(pool, true, OBJECTIVES[query.objective].direction);

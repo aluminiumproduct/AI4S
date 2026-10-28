@@ -2,6 +2,8 @@ import { AcquisitionFunction } from "../AcquisitionFunction";
 import { createSeededRandom } from "../SeededRandom";
 import type { FeaturePoint, TrainingPoint } from "../SurrogateModel";
 import type { Prediction } from "../models/regressors";
+import type { MaterialLineage } from "../../materialContext";
+import type { StabilityInput } from "./ParetoData";
 
 export type Objectives = [performance: number, hullEvAtom: number, priceUsdKg: number];
 export type Weights = [number, number, number];
@@ -9,6 +11,9 @@ export interface ParetoCandidate {
   id: string; formula: string; composition: Record<string, number>; features: number[];
   objectives: Objectives; observed: boolean; observedAt?: number;
   source: "demo" | "materials-project"; stabilitySource: string; priceQuality: "reference" | "scenario";
+  lineage?: MaterialLineage;
+  objective?: { id: "band-gap"; unit: "eV"; direction: "max" };
+  stabilityProvenance?: StabilityInput;
 }
 export interface ObjectiveScales { performance: number; hull: number; price: number }
 export interface ParetoRound {

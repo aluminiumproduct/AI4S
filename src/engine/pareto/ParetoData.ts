@@ -2,8 +2,9 @@ import type { Material } from "../../types";
 import { extractCompositionFeatures } from "../CompositionFeatures";
 import { materialPrice, type PriceOverrides } from "./priceBook";
 import type { ObjectiveScales, ParetoCandidate } from "./ParetoEngine";
+import { materialLineage, materialRecordKey } from "../../materialContext";
 
-export interface StabilityInput { materialId: string; energyAboveHull: number; source: string; method: string; referenceSet: string }
+export interface StabilityInput { materialId: string; energyAboveHull: number; source: string; method: string; referenceSet: string; recordKey?: string }
 export function parseStabilityInputs(text: string): StabilityInput[] {
   const rows: unknown = JSON.parse(text);
   if (!Array.isArray(rows)) throw new Error("需要稳定性记录数组");
@@ -13,7 +14,9 @@ export function parseStabilityInputs(text: string): StabilityInput[] {
       || typeof row.energyAboveHull !== "number" || !Number.isFinite(row.energyAboveHull) || row.energyAboveHull < 0
       || ![row.source, row.method, row.referenceSet].every(v => typeof v === "string" && v.trim().length > 0)) throw new Error("每条记录需要唯一材料ID、非负Ehull、来源、方法及参考相集合");
     seen.add(row.materialId);
-    return { materialId: row.materialId, energyAboveHull: row.energyAboveHull, source: row.source, method: row.method, referenceSet: row.referenceSet };
+    if (row.recordKey !== undefined && (typeof row.recordKey !== "string" || row.recordKey.length > 4000)) throw new Error("无效记录身份");
+    return { materialId: row.materialId, energyAboveHull: row.energyAboveHull, source: row.source, method: row.method, referenceSet: row.referenceSet,
+      ...(row.recordKey ? { recordKey: row.recordKey } : {}) };
   });
 }
 export function demoCandidates(overrides: PriceOverrides = {}): ParetoCandidate[] {
@@ -37,20 +40,38 @@ export function demoCandidates(overrides: PriceOverrides = {}): ParetoCandidate[
   }
   return rows;
 }
+export function isParetoMaterial(material: Material): boolean {
+  return (material.targetKind ?? "band-gap") === "band-gap"
+    && (material.source === "materials-project" || material.source === "MP-DFT"
+      && (material.datasetSource === "mp-live" || material.datasetSource === "mp-snapshot"));
+}
+export function bindStabilityInputs(rows: StabilityInput[], materials: Material[]): StabilityInput[] {
+  return rows.map(row => {
+    const material = materials.find(material => material.id === row.materialId && isParetoMaterial(material));
+    if (!material) throw new Error("稳定性记录不属于当前 MP 带隙数据集：" + row.materialId);
+    const recordKey = materialRecordKey(material);
+    if (row.recordKey && row.recordKey !== recordKey) throw new Error("稳定性记录版本与当前数据不一致");
+    return { ...row, recordKey };
+  });
+}
 export function materialCandidates(materials: Material[], overrides: PriceOverrides = {}, stability: StabilityInput[] = []) {
   const external = new Map(stability.map(row => [row.materialId, row]));
   const candidates: ParetoCandidate[] = [];
   let missingStability = 0, missingPrice = 0;
   for (const material of materials) {
-    if (material.source !== "materials-project") continue;
-    const imported = external.get(material.id);
+    if (!isParetoMaterial(material)) continue;
+    const requested = external.get(material.id);
+    const imported = requested && (requested.recordKey === materialRecordKey(material)
+      || !requested.recordKey && material.source === "materials-project" && !material.recordRevision) ? requested : undefined;
     const hull = imported?.energyAboveHull ?? material.energyAboveHull;
     if (typeof hull !== "number" || !Number.isFinite(hull) || hull < 0) { missingStability++; continue; }
     const price = materialPrice(material.composition, overrides);
     if (price.usdKg === null) { missingPrice++; continue; }
     candidates.push({ id: material.id, formula: material.formula, composition: material.composition, features: material.features,
       objectives: [material.trueProperty, hull, price.usdKg], observed: false, source: "materials-project",
-      stabilitySource: imported ? `${imported.source} · ${imported.method} · ${imported.referenceSet}` : "Materials Project energy_above_hull", priceQuality: price.quality });
+      stabilitySource: imported ? `${imported.source} · ${imported.method} · ${imported.referenceSet}` : "Materials Project energy_above_hull", priceQuality: price.quality,
+      lineage: materialLineage(material), objective: { id: "band-gap", unit: "eV", direction: "max" },
+      ...(imported ? { stabilityProvenance: { ...imported } } : {}) });
   }
   return { candidates, missingStability, missingPrice };
 }
