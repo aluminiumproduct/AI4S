@@ -10,6 +10,7 @@ import { compareSpectrum, demoCrystal, isStrontiumTitanate, parseExperimentalSpe
 import { experimentHistory, saveExperiment } from "../synthesis/records";
 import type { ComparisonResult, ExperimentRecord, LabRequest, PreflightResult, ReferenceBinding, SynthesisFeedback, XrdPoint, XrdResult } from "../synthesis/types";
 import XrdPlot from "./XrdPlot";
+import MethodNote from "./MethodNote";
 import "./synthesis.css";
 
 const StructureViewer = lazy(() => import("./StructureViewer"));
@@ -191,14 +192,14 @@ export default function SynthesisLab({ open, onClose, request, materials, onFeed
           <section className="synthesis-card synthesis-crystal"><div className="synthesis-card-title"><h3>原子结构</h3><span>{structure?.sites.length || "—"} sites</span></div>
             {structure ? <Suspense fallback={<p>正在加载晶胞…</p>}><StructureViewer structure={structure} atoms={atoms} repeats={1} showCell showNeighbors cutoff={2.7} selected={selectedAtom} active={open} onSelect={index => setSelectedAtom([index])} /></Suspense> : <div className="synthesis-placeholder">准备晶胞</div>}
           </section>
-          <section className={`synthesis-card synthesis-grade grade-${preflight?.grade || "B"}`}><div className="synthesis-card-title"><h3>可合成性预审</h3><span>{preflight?.source === "data-hub" ? "快照 Ehull + 启发式预审" : preflight?.source === "materials-project" ? "实时 MP + 启发式预审" : preflight?.source === "unavailable" ? "稳定性数据缺失" : "演示预审"}</span></div>
+          <section className={`synthesis-card synthesis-grade grade-${preflight?.grade || "B"}`}><div className="synthesis-card-title"><h3>可合成性预审</h3><span>{preflight?.source === "data-hub" ? "快照 Ehull" : preflight?.source === "materials-project" ? "Materials Project" : preflight?.source === "unavailable" ? "稳定性数据缺失" : "演示预审"}</span></div>
             <div className="synthesis-grade-main"><b>{preflight?.grade === "unknown" ? "?" : preflight?.grade || "—"}</b><div><strong>{preflight?.label || "正在预审"}</strong><p>综合评分 <em>{preflight?.score ?? "—"}</em> / 100</p></div></div>
             <div className="synthesis-energy"><span>能量高于凸包</span><b>{preflight?.energyAboveHull != null ? (preflight.energyAboveHull*1000).toFixed(1) : "—"}<small> meV/atom</small></b></div>
             {preflight?.factors.map(factor => <div className="synthesis-factor" key={factor.name}><div><span>{factor.name}</span><b>{factor.score}</b></div><i><span style={{ width: `${factor.score}%` }} /></i></div>)}
             <div className="synthesis-competitors"><small>关注的竞争相</small><div>{preflight?.competitors.map(phase => <span key={phase.formula}>{phase.formula}</span>)}</div></div>
           </section>
           <section className="synthesis-card synthesis-recipe"><h3>合成工艺窗口</h3><label>烧结温度 <b>{temperature} °C</b><input aria-label="烧结温度" type="range" min="400" max="1500" step="25" value={temperature} onChange={event => changeSetup(() => setTemperature(Number(event.target.value)))} /></label>
-            <label>烧结气氛<select aria-label="烧结气氛" value={atmosphere} onChange={event => changeSetup(() => setAtmosphere(event.target.value))}><option value="air">空气</option><option value="oxygen">富氧</option><option value="inert">惰性气氛</option><option value="reducing">还原气氛</option></select></label><p>工艺参数仅为待验证情景，需独立确认工艺窗口</p></section>
+            <label>烧结气氛<select aria-label="烧结气氛" value={atmosphere} onChange={event => changeSetup(() => setAtmosphere(event.target.value))}><option value="air">空气</option><option value="oxygen">富氧</option><option value="inert">惰性气氛</option><option value="reducing">还原气氛</option></select></label><MethodNote>预审结合对应版本的 Ehull、温度与气氛进行启发式评分；工艺窗口需结合具体样品验证。</MethodNote></section>
         </aside>
         <div className="synthesis-right">
           <section className="synthesis-card synthesis-diffraction"><div className="synthesis-card-title"><div><span className="synthesis-eyebrow">DIFFRACTION FINGERPRINT</span><h3>理论与实验，一眼对照</h3></div><span>{xrd?.engine || "pymatgen"}</span></div>
@@ -230,7 +231,7 @@ export default function SynthesisLab({ open, onClose, request, materials, onFeed
           </section>
         </div>
       </div>
-      <footer className="synthesis-footer"><span>AI4S LAB · 结构 → 合成 → 表征 → 学习</span><span>相占比是当前参考模型的拟合贡献，不等于绝对纯度或独立实验验证</span></footer>
+      <footer className="synthesis-footer"><span>AI4S LAB · 结构 → 合成 → 表征 → 学习</span><MethodNote>相占比是当前参考模型的拟合贡献，不等于经标定的绝对质量纯度。上传谱保留样品与出处；演示谱保留来源标记。反馈继续按记录版本和晶胞几何身份绑定。</MethodNote></footer>
     </div>
   </dialog>;
 }

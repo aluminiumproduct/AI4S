@@ -9,6 +9,7 @@ import { MaterialStructureService } from "../services/MaterialStructureService";
 import { networkIssueCode, networkMessage } from "../services/NetworkStatus";
 import "./structure.css";
 import InlineXrd from "./InlineXrd";
+import MethodNote from "./MethodNote";
 
 interface Props { open: boolean; onClose(): void; lang: "zh" | "en"; materialRequest?: MaterialStructureRequest | null; onImportMode?(): void; onOpenLab?(structure: CrystalStructure): void; }
 type RemoteState = { requestId: number; status: "loading" | "ready" | "missing" | "error"; structure?: CrystalStructure; cached?: boolean; code?: string };
@@ -172,7 +173,8 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
           <label>{t("显示超胞", "Display cell")} <select value={repeats} onChange={event => setRepeats(Number(event.target.value))}><option value={1}>1 × 1 × 1</option><option value={2} disabled={structure.sites.length * 8 > MAX_STRUCTURE_SITES}>2 × 2 × 2</option></select></label>
         </div>
           <StructureViewer structure={structure} atoms={atoms} repeats={repeats} showCell={showCell} showNeighbors={showNeighbors} cutoff={cutoff} selected={selected} active={open} onSelect={selectAtom} />
-          <p className="structure-muted structure-geometry-note">{t("邻接线按当前显示原子的距离绘制，不代表化学键判定；最多显示 8000 条。超胞为周期复制，原结构不变。", "Links use distances between displayed atoms, not a chemical bond assignment; up to 8000 are shown. Supercells only change the display.")}{atoms.length > 1200 && t(" 大结构已关闭邻接线以保持响应。", " Links are disabled for large structures.")}</p>
+          {atoms.length > 1200 && <p className="structure-muted structure-geometry-note">{t("大结构已关闭邻接线以保持响应。", "Links are disabled for large structures.")}</p>}
+          <MethodNote lang={lang}>{t("邻接线按当前显示原子的距离绘制；最多显示 8000 条。超胞为周期复制，原结构不变。几何邻接与化学键判定分别处理。", "Links use distances between displayed atoms, up to 8000. Supercells change the display only; geometric links and chemical bonds are distinct.")}</MethodNote>
           <InlineXrd structure={structure} active={open} onOpen={onOpenLab ? () => onOpenLab(structure) : undefined} />
         </div>
         <aside className="structure-info">
@@ -202,6 +204,6 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
           <td>{index + 1}</td><td><button type="button" onClick={() => selectAtom(atoms.findIndex(atom => atom.siteIndex === index))}>{site.label}</button></td><td>{site.species.map(s => `${s.element} ${formatNumber(s.occupancy)}`).join(" / ")}</td><td>{site.fractional.map(v => formatNumber(v, 6)).join(", ")}</td><td>{site.selective ? site.selective.map(v => v ? "T" : "F").join(" ") : "—"}</td>
         </tr>)}</tbody></table></div><p className="structure-muted">{t(`匹配 ${matchingSites.length} 个位点，最多展示前 100 行。`, `${matchingSites.length} matching sites; first 100 rows shown.`)}</p></section>
     </>}
-    <footer className="structure-footer">{materialMode ? t("按材料 ID 查看对应的数据库结构；查看操作不会改变训练数据、采样状态或目标性质，不执行 uMLIP 计算。", "Structures are linked by material ID. Viewing does not change training data, sampling state or target properties, and does not run uMLIP.") : t("导入结构与主动学习数据池独立保存；未提供真实带隙等标签时，不会加入训练。演示文件是理想结构示例。", "Imported structures are separate from the learning pool and are not training observations without target labels. Example files are idealized structures.")}</footer>
+    <footer className="structure-footer"><MethodNote lang={lang}>{materialMode ? t("按材料 ID 查看对应的数据库结构；查看操作不改变训练数据、采样状态或目标性质。uMLIP 计算由独立入口执行。", "Structures are linked by material ID; viewing preserves learning state. uMLIP calculations use a separate workflow.") : t("导入结构与主动学习数据池独立保存；提供目标性质后可建立训练观测。演示文件保留理想结构来源。", "Imported structures are kept separately; target labels establish training observations. Examples retain their ideal-structure provenance.")}</MethodNote></footer>
   </dialog>;
 }

@@ -6,6 +6,7 @@ import { advisorCandidates, advisorMessages, advisorQuestions, buildAdvisorConte
 import { advisorErrorMessage, requestAdvisor } from "../services/AdvisorService";
 import "./advisor.css";
 import { sourceLabel } from "../dataHub";
+import MethodNote from "./MethodNote";
 
 export interface AdvisorRequest { requestId: number; materialId?: string; action?: AdvisorAction }
 interface Props { open: boolean; onClose(): void; input: AdvisorInput; lang: AdvisorLanguage; loading: boolean; request: AdvisorRequest | null }
@@ -124,7 +125,8 @@ export default function MaterialsAdvisor({ open, onClose, input, lang, loading, 
       {selected && <div className="advisor-selected-metrics"><span>µ {selected.prediction_mean_mu ?? "—"}</span><span>σ {selected.uncertainty_sigma ?? "—"}</span><span>{zh ? "成本" : "Cost"} {selected.cost.value ?? "—"}</span></div>}
       <button type="button" className="advisor-preview-toggle" onClick={() => setPreview(!preview)} aria-expanded={preview}><ChevronDown size={13} />{zh ? "查看将发送的数据摘要" : "Preview shared context"}</button>
       {preview && <div className="advisor-preview"><p>{zh ? "发送当前轮次、已采样最优材料、Top-3、选中材料的组成/特征/预测和近期收敛记录；不含未采样真实标签、密钥或结构文件。" : "Shares this round, the best sampled material, top candidates, selected composition/features/predictions and recent progress. No hidden candidate labels, keys or structure files."}</p><pre>{JSON.stringify(context, null, 2)}</pre></div>}
-      <p className="advisor-evidence-note">{context.objective.name} / {context.objective.unit}。{zh ? "来源、方法与保真度随快照保留；组成不能确定真实结构，成本为估计量。" : "The snapshot retains source, method and fidelity. Composition does not identify a crystal structure; costs are estimates."}</p>
+      <p className="advisor-evidence-note">{context.objective.name} / {context.objective.unit}</p>
+      <MethodNote lang={lang}>{zh ? "来源、方法与保真度随快照保留；组成不能确定真实结构，成本为估计量。" : "The snapshot retains source, method and fidelity. Composition does not identify a crystal structure; costs are estimates."}</MethodNote>
       </div>
       <div className="advisor-actions">{actions.map(({ action, label, icon: Icon }) => <button type="button" key={action} disabled={busy || loading || (action !== "overview" && !selected)} onClick={() => { if (action === "overview") setSelectedId(null); void send(advisorQuestions[action][lang], action === "overview" ? null : selectedId); }}><Icon size={14} />{label}</button>)}</div>
     </section>

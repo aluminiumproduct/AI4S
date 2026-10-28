@@ -7,6 +7,7 @@ import type { ConfigurationInput, ConfigurationStatus, UmlipCapabilities, UmlipR
 import StructureViewer from "./StructureViewer";
 import "./structure.css";
 import "./umlip.css";
+import MethodNote from "./MethodNote";
 
 async function api<T>(url: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/umlip${url}`, { ...init, headers: { "Content-Type": "application/json", ...init.headers } });
@@ -183,14 +184,14 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
       <p>{t("固定晶胞 · 真实本地 MACE 弛豫 · 最小化构型能量", "Fixed cell · real local MACE relaxation · energy minimization")}</p></div>
       <button type="button" onClick={onClose} aria-label={t("关闭 uMLIP 面板", "Close uMLIP panel")}>✕</button></header>
     <div className="umlip-content">
-      <p className="umlip-note">{t("独立于带隙演示：没有预存能量标签。仅已收敛计算参与 GPR 训练；第一条收敛结果固定为相对能参考。这里的结果属于 MLIP 近似，尚未进行独立 DFT 验证。", "Independent of the band-gap demo: no stored energy labels. Only converged calculations train GPR. The first converged result fixes the energy reference. These MLIP approximations have not been independently validated against DFT.")}</p>
+      <MethodNote lang={lang}>{t("仅已收敛计算参与 GPR 训练；第一条收敛结果固定为相对能参考。结果属于 MLIP 势函数能量，与 DFT 带隙/形成能分别记录。", "Only converged calculations train GPR. The first converged result fixes the reference; MLIP energies are tracked separately from DFT properties.")}</MethodNote>
       {error && <p role="alert" className="umlip-error">{error}</p>}
       <section className="umlip-settings" aria-label={t("uMLIP 计算设置", "uMLIP settings")}>
         <div className="umlip-toolbar">
           <label className="umlip-file">{t("导入多个 CIF / POSCAR / CONTCAR", "Import CIF / POSCAR / CONTCAR files")}<input type="file" multiple disabled={editing} onChange={e => { void importFiles(e.target.files); e.target.value = ""; }} /></label>
           <button type="button" disabled={editing} onClick={loadDemo}>{t("载入 6 个 SrTiO₃ 坐标示例", "Load 6 SrTiO₃ coordinate examples")}</button>
         </div>
-        <p className="umlip-small">{parsing ? t("正在解析结构…", "Parsing structures…") : t("需要相同元素计数、原子数、元素顺序和运动约束；仅支持满占位有序晶胞，最多 32 个构型、每个 128 原子。示例为理想／位移扰动坐标，可能弛豫回同一极小值，不代表已验证多晶型。", "Use identical atom counts, element order and motion constraints. Ordered full-occupancy cells only, up to 32 configurations and 128 atoms each. Examples are ideal/displaced inputs and may relax to one minimum; they are not validated polymorphs.")}</p>
+        <p className="umlip-small">{parsing ? t("正在解析结构…", "Parsing structures…") : t("同元素计数、原子顺序与运动约束 · 满占位有序晶胞 · 最多 32 构型 / 128 原子", "Same atom counts, element order and constraints · ordered full occupancy · up to 32 configurations / 128 atoms")}</p>
         <div className="umlip-fields">
           <label>{t("计算次数预算", "Evaluation budget")}<input aria-label="uMLIP 计算次数预算" type="number" min={1} max={candidates.length || 32} value={budget} disabled={busy} onChange={e => setBudget(Number(e.target.value))} /></label>
           <label>{t("每轮构型数", "Batch size")}<input aria-label="uMLIP 每轮构型数" type="number" min={1} max={4} value={batchSize} disabled={busy} onChange={e => setBatchSize(Number(e.target.value))} /></label>
@@ -216,7 +217,7 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
         <div><span>{t("模型加载 / s", "Model load / s")}</span><strong>{number(run.modelLoadSeconds, 5)}</strong></div>
         {run.error && <p className="umlip-error">{run.error}</p>}
       </section>}
-      {run?.reference && <p className="umlip-small">{t("固定参考", "Fixed reference")}: {run.reference.id} · Eref = {number(run.reference.energyEv, 10)} eV · {run.atomCount} atoms · ΔE = E − Eref。{t("负值表示比参考构型低能；不代表形成能或凸包距离。", "Negative means lower energy than the reference; this is not a formation or hull energy.")}</p>}
+      {run?.reference && <p className="umlip-small">{t("固定参考", "Fixed reference")}: {run.reference.id} · Eref = {number(run.reference.energyEv, 10)} eV · {run.atomCount} atoms · ΔE = E − Eref</p>}
 
       <div className="umlip-table-wrap"><table className="umlip-table"><thead><tr>
         {[t("构型", "Configuration"), t("状态 / 轮次", "Status / round"), "E / eV·atom⁻¹", "ΔE / eV·atom⁻¹", "fmax / eV·Å⁻¹", t("离子步", "Steps"), t("弛豫 / s", "Relaxation / s"), t("输出", "Outputs")].map(h => <th key={h}>{h}</th>)}

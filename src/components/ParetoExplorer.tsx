@@ -8,6 +8,7 @@ import { PRICE_BOOK, PRICE_BOOK_VERSION, atomicMass, parsePriceOverrides, type P
 import { ELEMENT_TABLE_VERSION } from "../engine/CompositionFeatures";
 import { materialRecordKey } from "../materialContext";
 import "./pareto.css";
+import MethodNote from "./MethodNote";
 
 const number = (n: number, digits = 2) => n.toLocaleString("en-US", { maximumFractionDigits: digits });
 const presets: { id: string; zh: string; en: string; weights: Weights }[] = [
@@ -16,7 +17,7 @@ const presets: { id: string; zh: string; en: string; weights: Weights }[] = [
   { id: "value", zh: "成本优先", en: "Cost leadership", weights: [35, 15, 50] },
 ];
 
-export default function ParetoExplorer({ materials, lang }: { materials: Material[]; lang: "zh" | "en" }) {
+export default function ParetoExplorer({ materials, lang, suspended = false }: { materials: Material[]; lang: "zh" | "en"; suspended?: boolean }) {
   const zh = lang === "zh";
   const [mode, setMode] = useState<"demo" | "materials-project">("demo");
   const [weights, setWeights] = useState<Weights>([50, 25, 25]);
@@ -60,9 +61,13 @@ export default function ParetoExplorer({ materials, lang }: { materials: Materia
   };
   useEffect(() => { reset(); }, [dataset]);
   useEffect(() => () => { generation.current++; controller.current?.abort(); client.current?.dispose(); }, []);
+  useEffect(() => {
+    if (!suspended) return;
+    stopWork(); setPhase(value => value === "running" ? "paused" : value);
+  }, [suspended]);
 
   useEffect(() => {
-    if (phase !== "running" || busy || busyRef.current) return;
+    if (suspended || phase !== "running" || busy || busyRef.current) return;
     const version = generation.current;
     const timer = setTimeout(async () => {
       if (version !== generation.current || busyRef.current) return;
@@ -82,7 +87,7 @@ export default function ParetoExplorer({ materials, lang }: { materials: Materia
       }
     }, state.round === 0 ? 50 : 380);
     return () => clearTimeout(timer);
-  }, [phase, busy, pool, state, budget, seed, weights, scales, strategy]);
+  }, [phase, busy, pool, state, budget, seed, weights, scales, strategy, suspended]);
 
   const viewPool = replay === null ? pool : pool.map(c => ({ ...c, observed: c.observed && (c.observedAt ?? Infinity) <= replay }));
   const observed = viewPool.filter(c => c.observed);
@@ -117,9 +122,9 @@ export default function ParetoExplorer({ materials, lang }: { materials: Materia
   return <section id="pareto-explorer" className="pareto-shell" aria-labelledby="pareto-heading">
     <div className="pareto-eyebrow"><span className="pareto-live-dot" /> MULTI-OBJECTIVE INTELLIGENCE <span className="pareto-version">{strategy} · 3 {zh ? "目标联合寻优" : "objectives"}</span></div>
     <div className="pareto-title-row"><div><h2 id="pareto-heading">{zh ? <>高性能，<em>也要好生意。</em></> : <>High performance.<em> Better economics.</em></>}</h2><p>{zh ? "让性能、相稳定性与原料成本，在同一张决策图上找到交汇点。" : "Find the intersection of performance, phase stability and material economics."}</p></div><div className="pareto-source-switch" aria-label={zh ? "多目标数据源" : "Multi-objective data source"}><button aria-pressed={mode === "demo"} onClick={() => setMode("demo")}>{zh ? "路演组合" : "Demo alloys"}</button><button aria-pressed={mode === "materials-project"} disabled={!hasMP} onClick={() => setMode("materials-project")}>Materials Project</button></div></div>
-    {!hasMP && <p className="pareto-error">{zh ? "真实帕累托入口仅支持 MP 带隙最大化 + Ehull + 采购价格；其他目标请使用单目标寻优，路演组合仍可独立运行。" : "Real Pareto mode requires MP band gaps, hull energies and prices. Other objectives remain available in single-objective search."}</p>}
+    {!hasMP && <p className="pareto-error">{zh ? "选择 MP 带隙数据可开启真实材料寻优；路演组合可直接体验。" : "Select MP band-gap data for real-material search, or explore demo alloys now."}</p>}
     <div className="pareto-toolbar">
-      <div className="pareto-tags"><span><FlaskConical size={13} />{mode === "demo" ? (zh ? "确定性演示 · Al / Co / Ni / Cu / Ge / Sc" : "Deterministic demo · six metals") : (zh ? "MP 数据库回放" : "MP database replay")}</span><span>{dataset.candidates.length} {zh ? "候选" : "candidates"}</span><span>2025e {zh ? "价格快照 / 企业情景" : "price references / scenarios"}</span></div>
+      <div className="pareto-tags"><span><FlaskConical size={13} />{mode === "demo" ? (zh ? "演示组合 · Al / Co / Ni / Cu / Ge / Sc" : "Demo alloys · six metals") : (zh ? "MP 材料数据" : "MP materials data")}</span><span>{dataset.candidates.length} {zh ? "候选" : "candidates"}</span><span>2025e {zh ? "价格快照 / 企业情景" : "price references / scenarios"}</span></div>
       <div className="pareto-actions"><button onClick={exportFront} disabled={!observed.length} aria-label={zh ? "导出帕累托前沿" : "Export Pareto frontier"}><Download size={15}/><span>{zh ? "导出" : "Export"}</span></button><button onClick={reset} aria-label={zh ? "重置多目标寻优" : "Reset multi-objective search"}><RotateCcw size={15}/><span>{zh ? "重置" : "Reset"}</span></button><button className="pareto-run" disabled={!pool.length || phase === "done"} onClick={() => { if (phase === "running") { stopWork(); setPhase("paused"); } else { setError(""); setReplay(null); setPhase("running"); } }}>{phase === "running" ? <Pause size={15}/> : <Play size={15}/>}<span>{phase === "running" ? (zh ? "暂停寻优" : "Pause search") : phase === "done" ? (zh ? "本轮寻优完成" : "Search complete") : phase === "paused" || phase === "error" ? (zh ? "继续寻优" : "Resume search") : (zh ? "开启协同寻优" : "Start co-optimization")}</span></button></div>
     </div>
     <div className="pareto-metrics"><div><span>{zh ? "已评价候选" : "Evaluated candidates"}</span><strong>{observed.length}<small> / {Math.min(budget, pool.length)}</small></strong></div><div><span>{zh ? "帕累托优选" : "Pareto choices"}</span><strong>{front.length}<small> {zh ? "个方案" : "designs"}</small></strong></div><div><span>{zh ? "最优功能表现" : "Best performance"}</span><strong>{observed.length ? number(topPerformance, 3) : "—"}<small> {perfUnit}</small></strong></div><div><span>{zh ? "超体积增长" : "Hypervolume growth"}</span><strong className="pareto-green">{currentRecord ? `${gain >= 0 ? "+" : ""}${number(gain, 1)}%` : "—"}<small> HV {number(currentRecord?.hypervolume ?? 0, 3)}</small></strong></div></div>
@@ -141,6 +146,7 @@ export default function ParetoExplorer({ materials, lang }: { materials: Materia
       {[{ zh: "性能领先", en: "Performance", icon: Target }, { zh: "相稳定性", en: "Phase stability", icon: Layers3 }, { zh: "降本空间", en: "Material economics", icon: Wallet }].map((item, i) => <label className="pareto-weight" key={item.en}><span><item.icon size={14}/>{zh ? item.zh : item.en}<b>{Math.round(preference[i] * 100)}%</b></span><input type="range" aria-label={zh ? item.zh : item.en} min="0" max="100" value={weights[i]} onChange={e => setWeights(old => old.map((w, j) => i === j ? Number(e.target.value) : w) as Weights)}/></label>)}
       <div className="pareto-pick" aria-live="polite"><span className="pareto-pick-eyebrow"><Sparkles size={13}/>{zh ? "此刻优选" : "YOUR CURRENT CHOICE"}</span><h4>{selected?.formula ?? "—"}</h4><p className="pareto-pick-id">{selected?.id ?? (zh ? "完成首轮评价后，即刻生成方案" : "Evaluate the first batch to reveal a choice")}</p>{selected && <div className="pareto-pick-values"><div><span>{zh ? "功能表现" : "Performance"}</span><b>{number(selected.objectives[0], 3)} <small>{perfUnit}</small></b></div><div><span>E<sub>hull</sub></span><b>{number(selected.objectives[1] * 1000, 1)} <small>meV/atom</small></b></div><div><span>{zh ? "原料成本" : "Material price"}</span><b>${number(selected.objectives[2])}<small> /kg</small></b></div></div>}<span className="pareto-pick-footer">{selected ? <><ArrowUpRight size={14}/>{zh ? "已观测帕累托优选" : "Observed Pareto-optimal choice"}</> : (zh ? "让每一轮数据，变成可执行的选择" : "Turn every observation into a decision")}</span></div>
     </aside></div>
+    <MethodNote lang={lang}>{zh ? "MP 入口联合优化数据库带隙、Ehull 与质量分数加权采购价格，以已有观测评价候选；HV 使用固定尺度。采购价与计算代价分别记录，价格来源与报价口径见设置。" : "MP mode optimizes database band gaps, hull energies and mass-weighted material prices using existing observations. HV uses fixed scales; procurement prices and evaluation costs are tracked separately."}</MethodNote>
     {error && <p className="pareto-error" role="alert">{zh ? "本轮计算需要重试：" : "Retry this round: "}{error}</p>}
     <details className="pareto-settings"><summary><SlidersHorizontal size={14}/>{zh ? "实验设置、原料报价与稳定性接入" : "Experiment settings, prices & stability inputs"}</summary><div className="pareto-settings-grid"><div><label>{zh ? "评价预算" : "Evaluation budget"}<input type="number" min="6" max="200" value={budget} disabled={state.round > 0} onChange={e => { const n = Number(e.target.value); if (Number.isSafeInteger(n) && n >= 6 && n <= 200) setBudget(n); }}/></label><label>{zh ? "搜索种子" : "Search seed"}<input type="number" min="0" max="4294967295" value={seed} disabled={state.round > 0} onChange={e => { const n = Number(e.target.value); if (Number.isSafeInteger(n) && n >= 0 && n <= 0xffffffff) { client.current?.dispose(); client.current = null; setSeed(n); } }}/></label><label>{zh ? "采样策略" : "Sampling strategy"}<select value={strategy} disabled={state.round > 0} onChange={e => setStrategy(e.target.value as "ParEGO" | "Random")}><option>ParEGO</option><option value="Random">{zh ? "随机基线" : "Random baseline"}</option></select></label><p>{zh ? "ParEGO每轮重新标量化三目标观测，使用后台GPR与EI选择下一候选。偏好选择即时生效，跨轮HV使用固定尺度。" : "ParEGO re-scalarizes observations each round and uses Worker GPR/EI. Preferences update choices instantly; HV uses fixed scales."}</p></div><div><label htmlFor="pareto-price-input">{zh ? "企业报价覆盖 / USD·kg⁻¹" : "Company price overrides / USD·kg⁻¹"}</label><textarea id="pareto-price-input" rows={5} value={priceText} onChange={e => setPriceText(e.target.value)}/><button onClick={() => { try { const value = parsePriceOverrides(priceText); setSettingsError(""); setPrices(value); } catch (e) { setSettingsError(String(e)); } }}>{zh ? "应用报价并重启" : "Apply prices & restart"}</button><details><summary>{zh ? "查看价格来源与计量口径" : "Price sources & basis"}</summary><p>{PRICE_BOOK_VERSION} · {zh ? "质量分数加权原料价格；企业覆盖值作为采购情景。" : "Mass-weighted material price; overrides define company scenarios."}</p>{Object.entries(PRICE_BOOK).map(([s, p]) => <p key={s}><b>{s}</b> · ${number(prices[s] ?? p.usdKg, 4)}/kg · {p.basis} {p.quality === "reference" && <a href={p.source} target="_blank" rel="noreferrer">USGS ↗</a>}</p>)}</details></div><div><label htmlFor="pareto-stability-input">{zh ? "外部稳定性结果 / Ehull · eV/atom" : "External hull results / eV/atom"}</label><textarea id="pareto-stability-input" rows={5} value={stabilityText} onChange={e => setStabilityText(e.target.value)}/><button onClick={() => { try { setExternalStability(bindStabilityInputs(parseStabilityInputs(stabilityText), materials)); setSettingsError(""); } catch (e) { setSettingsError(String(e)); } }}>{zh ? "接入稳定性结果" : "Import stability results"}</button><p>{zh ? "字段：materialId、energyAboveHull、source、method、referenceSet。按材料ID接入已有MLIP或DFT相稳定性评估。" : "Fields: materialId, energyAboveHull, source, method, referenceSet. Import existing MLIP or DFT phase-stability results by ID."}</p></div></div>{settingsError && <p role="alert" className="pareto-error">{settingsError}</p>}</details>
   </section>;

@@ -53,8 +53,10 @@ import { applySynthesisFeedback, canApplySynthesisFeedback, feedbackLabel, loadF
 import { isStrontiumTitanate } from "./synthesis/client";
 import { materialRecordKey } from "./materialContext";
 import { materialForStructure } from "./synthesis/reference";
+import MethodNote from "./components/MethodNote";
 
 const SynthesisLab = React.lazy(() => import("./components/SynthesisLab"));
+const PresentationWorkspace = React.lazy(() => import("./components/PresentationWorkspace"));
 
 const engine = new MaterialsEngine();
 
@@ -101,8 +103,8 @@ const translations = {
     langToggle: "中文",
     docs: "Documentation",
     docsTitle: "System Documentation & Technical Specifications",
-    benchmark: "Benchmark",
-    benchmarkTitle: "Strategy Illustration (Not a Measured Benchmark)",
+    benchmark: "Strategy demo",
+    benchmarkTitle: "Active-learning strategy evolution",
     close: "Close",
     themeClassic: "Classic",
     themeScience: "Scientific Blue",
@@ -146,8 +148,8 @@ const translations = {
     langToggle: "English",
     docs: "系统文档",
     docsTitle: "系统文档与技术规范",
-    benchmark: "性能基准",
-    benchmarkTitle: "策略示意（非实测基准）",
+    benchmark: "策略演示",
+    benchmarkTitle: "主动学习策略演进",
     close: "关闭",
     themeClassic: "经典模式",
     themeScience: "科研蓝",
@@ -156,6 +158,8 @@ const translations = {
 };
 
 export default function App() {
+  const [presentation, setPresentation] = useState(() => new URLSearchParams(window.location.search).get("mode") !== "research");
+  const presentationNeedsReload = useRef(presentation);
   const [showUmlip, setShowUmlip] = useState(false);
   const [hasOpenedUmlip, setHasOpenedUmlip] = useState(false);
   const openUmlip = () => { setHasOpenedUmlip(true); setShowUmlip(true); };
@@ -223,7 +227,7 @@ export default function App() {
   const stopReason = getStopReason(pool, totalBudget);
   const [formulaMap, setFormulaMap] = useState(false);
   const distillation = useDistillation({ pool, runId: advisorRunId, iteration: state.iteration,
-    isRealData, objective: hubMetadata?.objective ?? hubQuery.objective, modelConfig: modelSettings, isRunning: isAutoRunning, loading: isLoadingData });
+    isRealData, objective: hubMetadata?.objective ?? hubQuery.objective, modelConfig: modelSettings, isRunning: isAutoRunning, loading: isLoadingData || presentation });
 
   const cancelComputation = () => {
     runVersion.current++;
@@ -281,7 +285,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    void loadData(hubQuery);
+    if (!presentation) void loadData(hubQuery);
     return () => {
       loadRequest.current++;
       runVersion.current++;
@@ -355,12 +359,30 @@ export default function App() {
 
   const topAdvisorCandidates = useMemo(() => advisorCandidates(pool), [pool]);
 
+  const openPresentation = () => {
+    presentationNeedsReload.current = isLoadingData || !isLoaded;
+    loadRequest.current++; engine.cancelLoad(); cancelComputation(); distillation.suspend();
+    setIsAutoRunning(false); setIsLoadingData(false);
+    setShowLab(false); setShowStructure(false); setShowUmlip(false); setShowAdvisor(false);
+    const url = new URL(window.location.href); url.searchParams.set("mode", "showcase");
+    window.history.replaceState(null, "", url); setPresentation(true);
+  };
+  const closePresentation = () => {
+    const url = new URL(window.location.href); url.searchParams.set("mode", "research");
+    window.history.replaceState(null, "", url); setPresentation(false);
+    if (presentationNeedsReload.current) { presentationNeedsReload.current = false; void loadData(hubQuery); }
+  };
+  const presentationView = presentation && <React.Suspense fallback={<div className="presentation-loading"><p>正在打开完整路演快照…</p></div>}>
+    <PresentationWorkspace onExit={closePresentation} />
+  </React.Suspense>;
+
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
+      <>{presentationView}<div hidden={presentation} style={presentation ? { display: "none" } : undefined} className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-[#141414] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-bold uppercase tracking-widest opacity-60">正在加载 Data Hub 数据目录…</p>
+          <button type="button" onClick={openPresentation} className="presentation-entry">✦ 一键路演 · 完整成果快照</button>
           <button type="button" onClick={openStructure} className="px-4 py-2 border rounded-lg">
             {lang === "zh" ? "先导入结构 / 3D 查看" : "Import structure / 3D viewer"}
           </button>
@@ -369,14 +391,14 @@ export default function App() {
         {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} onOpenLab={structure => openSynthesisLab(undefined, structure)} /></React.Fragment>}
         {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
         {labPanel}
-      </div>
+      </div></>
     );
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'classic' ? 'bg-[#F5F5F0] text-[#141414]' : 'bg-[#F0F4F8] text-[#1A365D]'} font-sans transition-colors duration-500 p-6`}>
+    <>{presentationView}<div hidden={presentation} style={presentation ? { display: "none" } : undefined} className={`ai4s-app-shell min-h-screen ${theme === 'classic' ? 'bg-[#F5F5F0] text-[#141414]' : 'bg-[#F0F4F8] text-[#1A365D]'} font-sans transition-colors duration-500 p-6`}>
       {/* Header */}
-      <header className={`max-w-7xl mx-auto mb-8 flex flex-wrap gap-5 justify-between items-end border-b ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pb-4`}>
+      <header className={`ai4s-header max-w-7xl mx-auto mb-8 flex flex-wrap gap-5 justify-between items-end border-b ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pb-4`}>
         <div>
           <h1 className="text-4xl font-serif italic font-medium tracking-tight">
             {t.title}
@@ -385,7 +407,8 @@ export default function App() {
             {t.subtitle}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="ai4s-navigation flex flex-wrap gap-2">
+          <button type="button" onClick={openPresentation} className="presentation-entry"><Sparkles size={14} />一键路演</button>
           <button type="button" onClick={openUmlip} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#486c51] bg-[#e6edde] text-[#34523d] text-xs font-bold">
             <Cpu size={14} /> {lang === "zh" ? "uMLIP 构型寻优" : "uMLIP configuration search"}
           </button>
@@ -456,7 +479,7 @@ export default function App() {
         </p>
       )}
 
-      <ParetoExplorer materials={pool} lang={lang} />
+      <ParetoExplorer materials={pool} lang={lang} suspended={presentation} />
 
       <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Sidebar: Config & Stats */}
@@ -711,25 +734,26 @@ export default function App() {
           <h4 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
             <Beaker size={14} /> {t.methodology}
           </h4>
-          <p className="text-xs opacity-60 leading-relaxed">
-            {t.methodologyDesc}
-          </p>
+          <div className="text-xs opacity-60 leading-relaxed">
+            <MethodNote lang={lang}>{t.methodologyDesc}</MethodNote>
+          </div>
         </div>
         <div className="space-y-2">
           <h4 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
             <Cpu size={14} /> {t.representation}
           </h4>
-          <p className="text-xs opacity-60 leading-relaxed">
-            {t.representationDesc}
-          </p>
+          <div className="text-xs opacity-60 leading-relaxed">
+            <MethodNote lang={lang}>{t.representationDesc}</MethodNote>
+          </div>
         </div>
         <div className="space-y-2">
           <h4 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
             <Zap size={14} /> {t.objective}
           </h4>
           <p className="text-xs opacity-60 leading-relaxed">
-            {objectiveSpec[lang]} / {objectiveSpec.unit} · {objectiveSpec.direction === "min" ? (lang === "zh" ? "最小化" : "Minimize") : (lang === "zh" ? "最大化" : "Maximize")}。{lang === "zh" ? "目标值按来源、方法与条件保留；本轮采用已有观测的离线回放。" : "Targets retain source, method and conditions; this run replays existing observations."}
+            {objectiveSpec[lang]} / {objectiveSpec.unit} · {objectiveSpec.direction === "min" ? (lang === "zh" ? "最小化" : "Minimize") : (lang === "zh" ? "最大化" : "Maximize")}
           </p>
+          <MethodNote lang={lang}>{lang === "zh" ? "目标值按来源、方法与条件保留；主工作台采用已有观测的离线回放。" : "Targets retain source, method and conditions; the main workspace replays existing observations."}</MethodNote>
         </div>
       </footer>
 
@@ -963,6 +987,6 @@ export default function App() {
       </AnimatePresence>
       {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} onOpenLab={structure => openSynthesisLab(undefined, structure)} /></React.Fragment>}
       {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
-    </div>
+    </div></>
   );
 }

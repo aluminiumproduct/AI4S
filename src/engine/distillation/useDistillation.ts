@@ -67,8 +67,12 @@ export function useDistillation(input: { pool: Material[]; runId: number; iterat
   const cancel = () => {
     serial.current++; client.current?.cancel(); setBusy(false); setAutomatic(false); setCancelled(true);
   };
+  const suspend = () => {
+    serial.current++; client.current?.cancel(); setBusy(false);
+    if (busy) lastRequested.current = 0;
+  };
   return { options, setOptions, target, setTarget, supplements, setSupplements, automatic, setAutomatic,
-    result, busy, error, cancelled, run, cancel, sampleCount: sampled.length, groupCount: groups,
+    result, busy, error, cancelled, run, cancel, suspend, sampleCount: sampled.length, groupCount: groups,
     materialIds, datasetIdentity: JSON.stringify([input.runId, objective]), objective: targetSpec(objective), ready: sampled.length >= options.minSamples && groups >= 8 && !input.loading };
 }
 export type DistillationController = ReturnType<typeof useDistillation>;
