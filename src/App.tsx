@@ -47,6 +47,12 @@ import { DEFAULT_HUB_QUERY, OBJECTIVES, sourceLabel, type HubMetadata, type HubQ
 import { useDistillation } from "./engine/distillation/useDistillation";
 import { DescriptorMap, DistillationPanel } from "./components/DistillationPanel";
 import ParetoExplorer from "./components/ParetoExplorer";
+import type { CrystalStructure } from "./structures/types";
+import type { LabRequest, SynthesisFeedback } from "./synthesis/types";
+import { applySynthesisFeedback, loadFeedbackRegistry, restoreFeedback, saveFeedbackRegistry } from "./synthesis/feedback";
+import { isStrontiumTitanate } from "./synthesis/client";
+
+const SynthesisLab = React.lazy(() => import("./components/SynthesisLab"));
 
 const engine = new MaterialsEngine();
 
@@ -157,6 +163,11 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [pool, setPool] = useState<Material[]>([]);
+  const [synthesisFeedbacks, setSynthesisFeedbacks] = useState(loadFeedbackRegistry);
+  const synthesisFeedbackRef = useRef(synthesisFeedbacks);
+  const [labRequest, setLabRequest] = useState<LabRequest | null>(null);
+  const [showLab, setShowLab] = useState(false);
+  const labSerial = useRef(0);
   const [strategy, setStrategy] = useState<AcquisitionStrategy>("UCB");
   
   // Dynamic Configs
@@ -191,6 +202,13 @@ export default function App() {
     setStructureMaterial({ id: material.id, formula: material.formula, source: material.source, structureRef: material.structureRef, requestId: ++structureRequestId.current });
     setHasOpenedStructure(true); setShowStructure(true);
   };
+  const openSynthesisLab = (material?: Material, structure?: CrystalStructure) => {
+    const chosen = material || (structure ? pool.find(m => m.id === structure.source.materialId)
+      : pool.find(m => isStrontiumTitanate(m.composition)) || advisorCandidates(pool)[0] || pool[0]);
+    setLabRequest({ requestId: ++labSerial.current, materialId: chosen?.id, formula: chosen?.formula,
+      composition: chosen?.composition, source: chosen?.source, structure });
+    setShowStructure(false); setShowLab(true);
+  };
   const [theme, setTheme] = useState<'classic' | 'science'>('classic');
   const [isIterating, setIsIterating] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -211,6 +229,16 @@ export default function App() {
     iterationInFlight.current = false;
     setIsIterating(false);
   };
+  const acceptSynthesisFeedback = (feedback: SynthesisFeedback) => {
+    cancelComputation(); setIsAutoRunning(false);
+    const registry = { ...synthesisFeedbackRef.current, [feedback.materialId]: feedback };
+    synthesisFeedbackRef.current = registry;
+    setSynthesisFeedbacks(registry); saveFeedbackRegistry(registry);
+    setPool(current => applySynthesisFeedback(current, feedback));
+  };
+  const labPanel = labRequest && <React.Suspense fallback={showLab ? <p role="status" className="fixed bottom-4 left-4 z-50 bg-white p-3 rounded shadow">正在打开合成与 XRD 实验室…</p> : null}>
+    <SynthesisLab open={showLab} onClose={() => setShowLab(false)} request={labRequest} materials={pool} onFeedback={acceptSynthesisFeedback} />
+  </React.Suspense>;
 
   const loadData = async (query: HubQuery) => {
     setHubQuery(query);
@@ -226,7 +254,7 @@ export default function App() {
       const metadata = await engine.loadHubData(query);
       if (request !== loadRequest.current) return;
       if (!metadata) return;
-      setPool(engine.getPool());
+      setPool(restoreFeedback(engine.getPool(), synthesisFeedbackRef.current));
       setHubMetadata(metadata);
       setIsRealData(true);
       setDataIssue(engine.getLoadIssue());
@@ -332,8 +360,9 @@ export default function App() {
           </button>
           <button type="button" onClick={openUmlip} className="block mx-auto mt-3 px-4 py-2 border rounded-lg">uMLIP 同成分构型计算</button>
         </div>
-        {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
+        {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} onOpenLab={structure => openSynthesisLab(undefined, structure)} /></React.Fragment>}
         {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
+        {labPanel}
       </div>
     );
   }
@@ -357,6 +386,9 @@ export default function App() {
           <button type="button" onClick={() => document.getElementById("distillation-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#a7bc95] bg-[#eaf2e2] text-[#456c44] text-xs font-bold">
             <Sparkles size={14} /> {lang === "zh" ? "白盒公式" : "White-box formulas"}
+          </button>
+          <button type="button" onClick={() => openSynthesisLab()} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#66928b] bg-[#e9f4ef] text-[#2c6b59] text-xs font-bold">
+            <Beaker size={14} />{lang === "zh" ? "合成预审 · XRD" : "Synthesis · XRD"}
           </button>
           <button type="button" onClick={() => openAdvisor()} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#b5a36d] bg-[#f3ecd7] text-[#514522] text-xs font-bold">
             <Sparkles size={14} /> {lang === "zh" ? "AI 首席材料顾问" : "AI Materials Advisor"}
@@ -555,6 +587,7 @@ export default function App() {
 
           <DistillationPanel controller={distillation} lang={lang} />
 
+          {pool.some(m => m.synthesisFeedback) && <div className="synthesis-feedback-banner"><span><b>实验反馈已接入</b> · {pool.filter(m => m.synthesisFeedback).length} 个候选已更新合成先验，下一轮将使用新的约束排序。</span><button type="button" onClick={() => openSynthesisLab()}>查看实验记录 ↗</button></div>}
           <section className="rounded-3xl border border-[#d6dfce] bg-[#f5f6ec] p-5" aria-label={lang === "zh" ? "AI 优先候选" : "AI candidate shortlist"}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div><h3 className="flex items-center gap-2 text-sm font-semibold text-[#35523c]"><Sparkles size={16} />{lang === "zh" ? "让推荐走向研究方案" : "From ranking to a research plan"}</h3><p className="text-[10px] text-[#7b8971] mt-1">{lang === "zh" ? `第 ${state.iteration} 轮 · 最近一次预测的 Top-3 · 下一轮重训可能改变排序` : `Round ${state.iteration} · Top 3 from the last prediction pass · Retraining may change the order`}</p></div>
@@ -563,8 +596,9 @@ export default function App() {
             {topAdvisorCandidates.length ? <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{topAdvisorCandidates.map((m, index) => <div key={m.id} className="bg-white/85 rounded-xl border border-[#e0e5d7] p-4">
               <div className="flex justify-between items-start gap-2"><span className="font-serif text-lg italic">{m.formula}</span><span className="text-[10px] text-[#9a8a50]">0{index + 1}</span></div>
               <p className="text-[9px] text-[#8d9782] font-mono truncate mt-1">{m.id}</p>
+              {m.synthesisFeedback && <span className={`synthesis-candidate-status ${m.synthesisFeedback.status}`}>{m.synthesisFeedback.status === "pass" ? "✓ XRD 验证通过" : "! 存在杂相"} · 先验 {m.synthesisFeedback.prior.toFixed(2)}</span>}
               <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1 text-[#5e7157] font-mono my-3"><span>µ {m.predictedMean?.toFixed(3)}</span><span>σ {m.predictedStd?.toFixed(3)}</span><span>{lang === "zh" ? "成本" : "Cost"} {m.cost.toFixed(2)}</span></div>
-              <div className="flex flex-wrap gap-2"><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
+              <div className="flex flex-wrap gap-2"><button type="button" onClick={() => openSynthesisLab(m)} className="synthesis-entry">⚗ {lang === "zh" ? "合成 / XRD" : "Synthesis / XRD"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
             </div>)}</div> : <p className="text-xs leading-relaxed text-[#829077]">{lang === "zh" ? "运行一轮主动学习后，这里会展示可解析的候选。也可以打开顾问，先讨论当前材料与研究目标。" : "Run a learning step to populate this shortlist, or open the advisor to discuss your materials and research objective."}</p>}
           </section>
 
@@ -592,6 +626,7 @@ export default function App() {
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.uncertainty}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.acquisition}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.trueValue}</th>
+                    <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "合成验证" : "Synthesis"}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "AI 顾问" : "AI Advisor"}</th>
                   </tr>
                 </thead>
@@ -647,6 +682,7 @@ export default function App() {
                           <td className="p-4 font-mono text-xs font-bold">
                             {m.isSampled ? `${m.trueProperty.toFixed(4)} ${objectiveSpec.unit}` : "???"}
                           </td>
+                          <td className="p-3 text-[10px]"><button type="button" onClick={event => { event.stopPropagation(); openSynthesisLab(m); }} className="synthesis-entry">{m.synthesisFeedback ? (m.synthesisFeedback.status === "pass" ? "✓ 已验证" : "! 杂相预警") : "合成 / XRD"}</button></td>
                           <td className="p-3 text-[10px] min-w-28"><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id, "mechanism"); }} className="block text-[#8b6d29] hover:underline disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id); }} className="block mt-2 text-[#51774e] hover:underline disabled:opacity-40">{lang === "zh" ? "合成 / 计算方案" : "Research plan"}</button></td>
                         </motion.tr>
                       ))}
@@ -661,6 +697,7 @@ export default function App() {
       <button type="button" onClick={() => openAdvisor()} className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-[#1e5542] text-[#f8f4df] border border-[#b9ac73] shadow-xl text-xs font-semibold" aria-label={lang === "zh" ? "打开 AI 首席材料顾问" : "Open AI materials advisor"}><Sparkles size={17} />{lang === "zh" ? "问问材料顾问" : "Ask the advisor"}</button>
       <MaterialsAdvisor open={showAdvisor} onClose={() => setShowAdvisor(false)} input={{ pool, state, strategy, batchSize, totalBudget, isRealData, runId: advisorRunId, modelConfig: modelSettings, hubMetadata, hubQuery: hubMetadata?.query ?? hubQuery, hubLoadState: isLoadingData ? "loading" : runError && !hubMetadata ? "error" : "ready" }} lang={lang} loading={isLoadingData || isIterating} request={advisorRequest} />
       <CompositionDescriptorPanel key={`${isRealData}:${pool[0]?.id ?? "empty"}`} materials={pool} lang={lang} />
+      {labPanel}
 
       {/* Research Methodology Modal / Info */}
       <footer className={`max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 border-t ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pt-8 pb-12`}>
@@ -918,7 +955,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-      {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
+      {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} onOpenLab={structure => openSynthesisLab(undefined, structure)} /></React.Fragment>}
       {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
     </div>
   );

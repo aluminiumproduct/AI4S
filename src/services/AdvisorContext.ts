@@ -59,6 +59,11 @@ function describeMaterial(material: Material, isRealData: boolean) {
     prediction_mean_mu: finite(material.predictedMean),
     uncertainty_sigma: finite(material.predictedStd),
     acquisition_score: finite(material.acquisitionValue),
+    synthesis_feedback: material.synthesisFeedback ? {
+      status: material.synthesisFeedback.status, score: finite(material.synthesisFeedback.score),
+      main_phase_fit_percent: finite(material.synthesisFeedback.mainFraction), prior: finite(material.synthesisFeedback.prior),
+      source: material.synthesisFeedback.demo ? "demo spectrum" : "uploaded experimental spectrum",
+    } : null,
     cost: { value: finite(material.cost), unit: "relative proxy units", provenance: "heuristic estimate, not measured time or money" },
     features: material.features.slice(0, 32).map((value, index) => ({
       index,
@@ -80,6 +85,10 @@ export function buildAdvisorContext(input: AdvisorInput, selectedId?: string | n
   const hubMode = !!requested || !!hub;
   const objective = requested ? OBJECTIVES[requested.objective] : hub ? OBJECTIVES[hub.objective] : null;
   const direction = objective?.direction ?? "max";
+  const synthesisActive = pool.some(material => material.synthesisFeedback);
+  const baseFormula = strategy === "UCB" ? (direction === "min" ? "(-mu + 2 * sigma) / estimated_cost; maximize negative LCB utility" : "(mu + 2 * sigma) / estimated_cost")
+    : strategy === "EI" ? (direction === "min" ? "Normal-surrogate E[max(best_observed - f, 0)] / estimated_cost" : "Normal-surrogate E[max(f - best_observed, 0)] / estimated_cost")
+      : strategy === "Uncertainty" ? "sigma / estimated_cost" : "stored uniform random draw / estimated_cost; not a performance ranking";
   const sampled = pool.filter(m => m.isSampled);
   const best = sampled.filter(m => Number.isFinite(m.trueProperty)).reduce<Material | undefined>((winner, m) => !winner || (direction === "min" ? m.trueProperty < winner.trueProperty : m.trueProperty > winner.trueProperty) ? m : winner, undefined);
   const selected = selectedId ? pool.find(m => m.id === selectedId) : undefined;
@@ -103,9 +112,8 @@ export function buildAdvisorContext(input: AdvisorInput, selectedId?: string | n
       iteration: state.iteration, strategy, batch_size: batchSize,
       total_sample_budget: totalBudget, remaining_sample_budget: Math.max(0, totalBudget - sampled.length),
       cost_aware: true, ucb_kappa: strategy === "UCB" ? 2 : null,
-      score_formula: strategy === "UCB" ? (direction === "min" ? "(-mu + 2 * sigma) / estimated_cost; maximize negative LCB utility" : "(mu + 2 * sigma) / estimated_cost")
-        : strategy === "EI" ? (direction === "min" ? "Normal-surrogate E[max(best_observed - f, 0)] / estimated_cost" : "Normal-surrogate E[max(f - best_observed, 0)] / estimated_cost")
-          : strategy === "Uncertainty" ? "sigma / estimated_cost" : "stored uniform random draw / estimated_cost; not a performance ranking",
+      score_formula: synthesisActive ? `${baseFormula}; with feedback: base_score * synthesis_prior when base_score >= 0, otherwise base_score / synthesis_prior` : baseFormula,
+      synthesis_feedback_active: synthesisActive,
       surrogate: model.en,
       model_config: { ...input.modelConfig },
       uncertainty: `${model.descriptionEn} Not a calibrated confidence interval or physical disorder; no arbitrary uncertainty floor.`,

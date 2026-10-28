@@ -12,6 +12,7 @@
 
 ## 功能特性
 
+- **合成预审与 XRD 实验室**：A/B/C 可合成性评级、竞争相提示、当前晶胞的 pymatgen 模拟谱、实验 `.xy` / `.csv` 导入、多相拟合及主动学习反馈；提供一键路演、高纯相与含杂相样例。
 - **主动学习闭环**：集成代理模型（Surrogate Model）、获取函数（Acquisition Function）与实验预算管理，支持 UCB / EI / 不确定性采样 / 随机基线等多种策略。
 - **七种可选代理模型**：RBF 高斯过程（默认）、随机森林、Extra Trees、梯度提升回归树、kNN、岭回归和 Bootstrap 线性 SGD 基线。训练与批量预测在 Web Worker 中执行，支持取消与固定种子；参数、耗时和不确定性含义在界面展示。
 - **白盒物理公式蒸馏**：达到采样门槛后，在独立 Worker 中执行带量纲与定义域检查的符号搜索、L1 筛选和 1–2 项 L0 稀疏模型选择；支持性质拟合、教师蒸馏、组成分组保留测试、公式导出及二维描述符图。详见 [公式蒸馏说明](docs/physical-formula-distillation.md)。
@@ -78,6 +79,8 @@ AI4S/
 ---
 
 ## 快速开始
+
+合成与 XRD 演示额外需要 Python 3.12。首次运行 `npm run setup:synthesis` 安装独立计算环境；如已有页面占用 3000 端口，可用 `PORT=3001 npm run dev` 启动新工作树。操作流程见 [合成与 XRD 演示指南](docs/synthesis-demo.md)。
 
 ### 前置条件
 

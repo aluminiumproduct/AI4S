@@ -11,4 +11,5 @@ coverage/
 /data/*.sqlite*
 umlip-results/
 .venv-umlip/
+.venv/
 __pycache__/

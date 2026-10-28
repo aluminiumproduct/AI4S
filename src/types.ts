@@ -1,5 +1,6 @@
 import type { CompositionDescriptors } from "./engine/CompositionFeatures";
 import type { Fidelity, HubSource, ObjectiveId, Provenance, ScientificSource, StructureRef } from "./dataHub";
+import type { SynthesisFeedback } from "./synthesis/types";
 
 export interface Material {
   id: string;
@@ -20,6 +21,7 @@ export interface Material {
   targetKind?: ObjectiveId | "synthetic-score";
   energyAboveHull?: number | null;
   formationEnergyPerAtom?: number | null;
+  synthesisFeedback?: SynthesisFeedback;
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost
   predictedMean?: number;

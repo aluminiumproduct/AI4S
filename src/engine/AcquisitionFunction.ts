@@ -1,6 +1,7 @@
 import { Material } from "../types";
 import { createSeededRandom, hashString } from "./SeededRandom";
 import type { ObjectiveDirection } from "../dataHub";
+import { constrainAcquisition, feasibilityPrior } from "../synthesis/feedback";
 
 export type AcquisitionStrategy = "Random" | "Uncertainty" | "EI" | "UCB";
 
@@ -48,9 +49,9 @@ export class AcquisitionFunction {
 
     // Cost-aware BO: Acquisition per unit cost
     if (isCostAware && material.cost > 0) {
-      return value / material.cost;
+      value /= material.cost;
     }
-    return value;
+    return constrainAcquisition(value, feasibilityPrior(material.synthesisFeedback));
   }
 
   private static expectedImprovement(mean: number, std: number, best: number): number {

@@ -6,6 +6,7 @@ import { createNetworkClient } from "./server/network";
 import { HubStore } from "./server/hubStore";
 import { resolve } from "node:path";
 import { UmlipService } from "./server/umlip/service";
+import { closeSynthesisEngine } from "./server/synthesis";
 
 dotenv.config();
 dotenv.config({ path: ".env.umlip.local" });
@@ -44,6 +45,7 @@ async function startServer() {
   const close = () => {
     if (closing) return;
     closing = true;
+    closeSynthesisEngine();
     network.close();
     umlip.close();
     server.close(() => hub.close());
