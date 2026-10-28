@@ -1,0 +1,56 @@
+{
+  "codeCommitUnderTest": "2a0769d7b9c7d89beb20283bbf4b2ce0859de760",
+  "checkedAt": "2026-10-28T14:22:03.442564+08:00",
+  "environment": {
+    "platform": "macOS arm64",
+    "node": "v22.22.2"
+  },
+  "checks": {
+    "typecheck": "PASS",
+    "tests": {
+      "total": 261,
+      "passed": 261,
+      "failed": 0,
+      "skipped": 0
+    },
+    "jointRegressionCases": 11,
+    "build": "PASS",
+    "actualMace": {
+      "status": "completed",
+      "rounds": 2,
+      "converged": 4,
+      "runId": "dfce2840-6f79-489e-bb5f-3542af7c48b4",
+      "reference": {
+        "id": "demo-0",
+        "energyEv": -40.09476072765552,
+        "energyPerAtomEv": -8.018952145531104
+      }
+    },
+    "browserWorkers": "Formula observed/teacher/cancel + seven models/cancel/restart ALL PASS",
+    "ui": [
+      "Pareto demo30/30 survives Hub target switch",
+      "Formula supplemental data and text reset on target switch",
+      "Formation-energy formula generated with eV/atom,min and correct export metadata",
+      "Real MP Pareto20/20 after source compatibility fix",
+      "uMLIP panel loads configured local model",
+      "XRD bound snapshot preflight and actual pymatgen spectrum",
+      "Demonstration feedback disabled for real candidates after download/rename/reimport"
+    ]
+  },
+  "scope": [
+    "Real Pareto intentionally supports MP band-gap(max),Ehull(min),price(min); all7Hub objectives supported by single-target AL and formulas",
+    "MACE workflow verification is not DFT accuracy validation",
+    "Python numerical tests reuse existing scientific runtime; no weights downloaded"
+  ],
+  "maceModel": {
+    "label": "MACE-MPA-0 medium",
+    "sha256": "75428afe3a1d7d8062e19bcaabd5c433623cabf308242ec9fb493e38604fb638",
+    "device": "cpu",
+    "dtype": "float64",
+    "threads": 2
+  },
+  "notes": [
+    "All numerical examples and replay metrics verify engineering behavior, not real-material predictive accuracy or discovery speedup.",
+    "The upstream ancestry synchronization and publication evidence commit do not change tested application code."
+  ]
+}
