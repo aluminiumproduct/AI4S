@@ -8,6 +8,8 @@ import StructureViewer from "./StructureViewer";
 import "./structure.css";
 import "./umlip.css";
 import MethodNote from "./MethodNote";
+import type { Restore, UmlipArchive, StructureDraft } from "../research/types";
+import { wrapFractional } from "../structures/geometry";
 
 async function api<T>(url: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/umlip${url}`, { ...init, headers: { "Content-Type": "application/json", ...init.headers } });
@@ -31,7 +33,10 @@ function parseFile(file: File, workers: Set<Worker>): Promise<CrystalStructure[]
   }));
 }
 
-export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onClose(): void; lang: "zh" | "en" }) {
+export default function UmlipPanel({ open, onClose, lang, enqueue, restored, onState, onUseStructure }: {
+  open: boolean; onClose(): void; lang: "zh" | "en"; enqueue?: Restore<ConfigurationInput[]>; restored?: Restore<UmlipArchive>;
+  onState?(state: UmlipArchive): void; onUseStructure?(draft: StructureDraft, action: "xrd" | "geometry"): void;
+}) {
   const zh = lang === "zh", t = (a: string, b: string) => zh ? a : b;
   const dialog = useRef<HTMLDialogElement>(null);
   const workers = useRef(new Set<Worker>());
@@ -41,6 +46,7 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
   const [capabilities, setCapabilities] = useState<UmlipCapabilities | null>(null);
   const [candidates, setCandidates] = useState<ConfigurationInput[]>([]);
   const [run, setRun] = useState<UmlipRun | null>(null);
+  const [archiveFiles, setArchiveFiles] = useState<NonNullable<UmlipArchive["files"]>>({});
   const [history, setHistory] = useState<{ id: string; status: string; createdAt: string; converged: number }[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [showInitial, setShowInitial] = useState(false);
@@ -70,6 +76,43 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
   const atoms = useMemo(() => viewStructure ? displayAtoms(viewStructure, 1) : [], [viewStructure]);
   const converged = run?.candidates.filter(c => c.status === "converged").length ?? 0;
   const attempted = run?.candidates.filter(c => c.status !== "pending").length ?? 0;
+  const hydratedToken = useRef(0);
+  useEffect(() => {
+    if (!restored || hydratedToken.current === restored.token) return;
+    hydratedToken.current = restored.token; operation.current++; restoreRequest.current?.abort();
+    const s = restored.value; setCandidates(s.candidates); setRun(s.run); setSelectedId(s.selectedId ?? ""); setShowInitial(s.showInitial);
+    setBudget(s.budget); setBatchSize(s.batchSize); setFmax(s.fmax); setMaxSteps(s.maxSteps); setArchiveFiles(s.files ?? {}); setPosting(false); setError(null);
+  }, [restored?.token]);
+  useEffect(() => { onState?.({ candidates, run, selectedId, showInitial, budget, batchSize, fmax, maxSteps, files: archiveFiles }); },
+    [candidates, run, selectedId, showInitial, budget, batchSize, fmax, maxSteps, archiveFiles]);
+  useEffect(() => {
+    if (!enqueue) return;
+    if (editing) { setError("请先结束当前构型计算，再加入新构型。"); return; }
+    try {
+      const next = [...candidates, ...enqueue.value];
+      if (next.length > 32) throw new Error("构型队列最多32个。");
+      if (next.length > 1) validatePool(next);
+      setCandidates(next); setRun(null); setArchiveFiles({}); setSelectedId(next.at(-1)!.id); setBudget(Math.min(next.length, 6)); setShowInitial(true); setError(null);
+    } catch (e) { setError((e as Error).message); }
+  }, [enqueue?.token]);
+  function useStructure(action: "xrd" | "geometry") {
+    if (!viewStructure || !selected) return;
+    onUseStructure?.({ structure: viewStructure, recordKey: selected.origin?.recordKey,
+      parentStructureHash: selected.origin?.structureHash, stage: !showInitial && observed?.result ? "relaxed" : "initial",
+      runId: run?.id, candidateId: selected.id, modelSha256: run?.model?.sha256 }, action);
+  }
+  function downloadArchive(id: string, key: "poscar" | "trajectory") {
+    const value = archiveFiles[id]?.[key]; if (!value) return;
+    const url = URL.createObjectURL(new Blob([value], { type: "text/plain" })), a = document.createElement("a");
+    a.href = url; a.download = `${id}-${key === "poscar" ? "relaxed.POSCAR" : "trajectory.jsonl"}`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function perturbSeed() {
+    if (editing || !candidates.length) return;
+    const seed = candidates[0], next: ConfigurationInput = { ...structuredClone(seed), id: `cfg-${Date.now().toString(36)}`,
+      name: seed.name + " · 位移构型", source: seed.source + " · 0.005 fractional displacement" };
+    next.structure.fractional = next.structure.fractional.map((row, i) => wrapFractional(row.map((v, j) => v + (next.structure.movable[i][j] ? .005 * ((i + j) % 2 ? 1 : -1) : 0)) as [number, number, number]));
+    const checked = validatePool([...candidates, next]); setCandidates(checked); setRun(null); setArchiveFiles({}); setSelectedId(next.id); setBudget(Math.min(checked.length, 6));
+  }
 
   useEffect(() => {
     if (open && dialog.current && !dialog.current.open) dialog.current.showModal();
@@ -131,14 +174,14 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
         if (next.length > 32) throw new Error("多个 CIF 数据块合计超过 32 个候选。");
       }
       const checked = validatePool(next);
-      setCandidates(checked); setRun(null); setBudget(Math.min(checked.length, 6)); setSelectedId(checked[0].id); setShowInitial(true);
+      setCandidates(checked); setRun(null); setArchiveFiles({}); setBudget(Math.min(checked.length, 6)); setSelectedId(checked[0].id); setShowInitial(true);
     } catch (e) { if (version === operation.current) setError((e as Error).message); }
     finally { if (version === operation.current) setParsing(false); }
   }
   function loadDemo() {
     if (editing) return;
     operation.current++; restoreRequest.current?.abort();
-    setError(null); const pool = demoConfigurations(); setCandidates(pool); setRun(null); setBudget(pool.length); setSelectedId(pool[0].id); setShowInitial(true);
+    setError(null); const pool = demoConfigurations(); setCandidates(pool); setRun(null); setArchiveFiles({}); setBudget(pool.length); setSelectedId(pool[0].id); setShowInitial(true);
   }
   async function start() {
     if (editing) return;
@@ -171,8 +214,8 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
     try {
       const next = await api<UmlipRun>(`/runs/${id}`, { signal: controller.signal });
       if (controller.signal.aborted || version !== operation.current) return;
-      setRun(next);
-      setCandidates(next.candidates.map(({ id, name, source, structure }) => ({ id, name, source, structure })));
+      setRun(next); setArchiveFiles({});
+      setCandidates(next.candidates.map(({ id, name, source, structure, origin }) => ({ id, name, source, structure, origin })));
       setBudget(next.settings.budget); setBatchSize(next.settings.batchSize); setFmax(next.settings.fmax); setMaxSteps(next.settings.maxSteps);
       setSelectedId(next.candidates[0].id); setShowInitial(false); setError(null);
     } catch (e) { if (!controller.signal.aborted && version === operation.current) setError((e as Error).message); }
@@ -190,6 +233,11 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
         <div className="umlip-toolbar">
           <label className="umlip-file">{t("导入多个 CIF / POSCAR / CONTCAR", "Import CIF / POSCAR / CONTCAR files")}<input type="file" multiple disabled={editing} onChange={e => { void importFiles(e.target.files); e.target.value = ""; }} /></label>
           <button type="button" disabled={editing} onClick={loadDemo}>{t("载入 6 个 SrTiO₃ 坐标示例", "Load 6 SrTiO₃ coordinate examples")}</button>
+          <button type="button" disabled={editing} onClick={() => {
+            operation.current++; restoreRequest.current?.abort(); setCandidates([]); setRun(null); setArchiveFiles({});
+            setSelectedId(""); setSelectedAtoms([]); setBudget(6); setShowInitial(true); setError(null);
+          }}>{t("新建同成分队列", "New composition queue")}</button>
+          <button type="button" disabled={editing || !candidates.length || candidates.length >= 32} onClick={perturbSeed}>{t("从首构型生成位移候选", "Create a displaced candidate")}</button>
         </div>
         <p className="umlip-small">{parsing ? t("正在解析结构…", "Parsing structures…") : t("同元素计数、原子顺序与运动约束 · 满占位有序晶胞 · 最多 32 构型 / 128 原子", "Same atom counts, element order and constraints · ordered full occupancy · up to 32 configurations / 128 atoms")}</p>
         <div className="umlip-fields">
@@ -229,13 +277,14 @@ export default function UmlipPanel({ open, onClose, lang }: { open: boolean; onC
           <td>{number(result?.energyPerAtomEv ?? (progress ? progress.energyEv / row.structure.elements.length : undefined), 9)}</td>
           <td>{number(record?.relativeEnergyPerAtomEv, 8)}</td><td>{number(result?.maxForceEvAngstrom ?? progress?.maxForceEvAngstrom, 5)}</td>
           <td>{result?.steps ?? progress?.step ?? "—"}</td><td>{number(result?.elapsedSeconds ?? progress?.elapsedSeconds, 5)}</td>
-          <td>{run && <>{result && <><a href={`/api/umlip/runs/${run.id}/candidates/${row.id}/poscar`}>POSCAR</a><br /></>}{(result || progress) && <a href={`/api/umlip/runs/${run.id}/candidates/${row.id}/trajectory`}>{t("逐步轨迹", "Trajectory")}</a>}</>}</td>
+          <td>{run && <>{result && <>{archiveFiles[row.id]?.poscar ? <button type="button" onClick={() => downloadArchive(row.id, "poscar")}>POSCAR</button> : <a href={`/api/umlip/runs/${run.id}/candidates/${row.id}/poscar`}>POSCAR</a>}<br /></>}{(result || progress) && (archiveFiles[row.id]?.trajectory ? <button type="button" onClick={() => downloadArchive(row.id, "trajectory")}>{t("逐步轨迹", "Trajectory")}</button> : <a href={`/api/umlip/runs/${run.id}/candidates/${row.id}/trajectory`}>{t("逐步轨迹", "Trajectory")}</a>)}</>}</td>
         </tr>;
       })}</tbody></table></div>
 
       {viewStructure && <section className="umlip-preview">
         <div className="umlip-toolbar"><h3>{selected?.name}</h3><label><input type="checkbox" checked={showInitial} onChange={e => setShowInitial(e.target.checked)} />{t("查看初始坐标", "Show initial coordinates")}</label>
-          <span className="umlip-small">{showInitial ? t("初始模型输入", "Initial model input") : observed?.status === "running" ? t("最新离子步坐标", "Latest ionic-step coordinates") : t("模型弛豫／输入结构", "MLIP relaxed / input structure")}</span></div>
+          <span className="umlip-small">{showInitial ? t("初始模型输入", "Initial model input") : observed?.status === "running" ? t("最新离子步坐标", "Latest ionic-step coordinates") : t("模型弛豫／输入结构", "MLIP relaxed / input structure")}</span>
+          {onUseStructure && <><button type="button" disabled={busy} onClick={() => useStructure("xrd")}>当前结构 → XRD</button><button type="button" disabled={busy} onClick={() => useStructure("geometry")}>几何量 → 白盒公式</button></>}</div>
         <StructureViewer structure={viewStructure} atoms={atoms} repeats={1} showCell showNeighbors={false} cutoff={2.5} selected={selectedAtoms} active={open}
           onSelect={index => setSelectedAtoms(previous => previous.includes(index) ? previous.filter(i => i !== index) : [...previous.slice(-1), index])} />
       </section>}

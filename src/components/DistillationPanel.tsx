@@ -15,10 +15,10 @@ const labels = (lang: "zh" | "en") => (zh: string, en: string) => lang === "zh" 
 export function DistillationPanel({ controller: c, lang }: { controller: DistillationController; lang: "zh" | "en" }) {
   const t = labels(lang), result = c.result;
   const objective = result ? targetSpec(result.objective) : c.objective;
-  const [supplementText, setSupplementText] = useState("{}");
+  const supplementText = c.supplementDraft, setSupplementText = c.setSupplementDraft;
   const [supplementError, setSupplementError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  useEffect(() => { setSupplementText("{}"); setSupplementError(null); }, [c.datasetIdentity]);
+  useEffect(() => { setSupplementError(null); }, [c.datasetIdentity]);
   const metricRows: { label: string; value: Metrics | undefined }[] = [
     { label: t("解析模型", "Symbolic model"), value: result?.metrics },
     { label: t("均值基线", "Mean baseline"), value: result?.meanBaseline },
@@ -135,8 +135,9 @@ function hull(points: [number, number][]): [number, number][] {
   return [...a, ...b];
 }
 
-export function DescriptorMap({ pool, result, lang, enabled, onToggle, objective = "band-gap" }: {
+export function DescriptorMap({ pool, result, lang, enabled, onToggle, objective = "band-gap", highlightedId }: {
   pool: Material[]; result: DistillationResult | null; lang: "zh" | "en"; enabled: boolean; onToggle(): void; objective?: TargetKind;
+  highlightedId?: string;
 }) {
   const t = labels(lang), symbolic = enabled && Boolean(result);
   const direction = targetSpec(symbolic && result ? result.objective : objective).direction;
@@ -180,7 +181,7 @@ export function DescriptorMap({ pool, result, lang, enabled, onToggle, objective
           fill={high(point) ? "#dfb35c" : point.observed !== null ? "#4e9c85" : symbolic ? "#b4cbc3" : "#b1c7c4"}
           fillOpacity={high(point) || point.observed !== null ? 0.95 : 0.32}
           stroke={point.partition === "test" ? "#376fca" : high(point) ? "#fff1b7" : "none"} strokeWidth="1.6"
-          className={high(point) ? "descriptor-gold-point" : ""} tabIndex={point.observed !== null ? 0 : undefined}
+          className={(high(point) ? "descriptor-gold-point " : "") + (point.id === highlightedId ? "research-link-focus" : "")} tabIndex={point.observed !== null ? 0 : undefined}
           aria-label={point.formula + " · " + point.id} onMouseEnter={() => setHovered(point)} onFocus={() => setHovered(point)}>
           <title>{point.formula + " · " + point.id + "\n" + (point.observed !== null ? t("已采样", "Sampled") : t("未采样", "Unsampled"))}</title>
         </circle>)}

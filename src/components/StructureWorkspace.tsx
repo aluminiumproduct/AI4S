@@ -10,12 +10,14 @@ import { networkIssueCode, networkMessage } from "../services/NetworkStatus";
 import "./structure.css";
 import InlineXrd from "./InlineXrd";
 import MethodNote from "./MethodNote";
+import type { Restore } from "../research/types";
 
-interface Props { open: boolean; onClose(): void; lang: "zh" | "en"; materialRequest?: MaterialStructureRequest | null; onImportMode?(): void; onOpenLab?(structure: CrystalStructure): void; }
+interface Props { open: boolean; onClose(): void; lang: "zh" | "en"; materialRequest?: MaterialStructureRequest | null; onImportMode?(): void; onOpenLab?(structure: CrystalStructure): void;
+  restored?: Restore<CrystalStructure>; onStructure?(structure: CrystalStructure): void; onUseStructure?(structure: CrystalStructure, action: "queue" | "geometry"): void; }
 type RemoteState = { requestId: number; status: "loading" | "ready" | "missing" | "error"; structure?: CrystalStructure; cached?: boolean; code?: string };
 const formatNumber = (value: number, digits = 4) => value.toLocaleString("en-US", { maximumFractionDigits: digits, useGrouping: false });
 
-export default function StructureWorkspace({ open, onClose, lang, materialRequest = null, onImportMode, onOpenLab }: Props) {
+export default function StructureWorkspace({ open, onClose, lang, materialRequest = null, onImportMode, onOpenLab, restored, onStructure, onUseStructure }: Props) {
   const t = (zh: string, en: string) => lang === "zh" ? zh : en;
   const dialog = useRef<HTMLDialogElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -44,6 +46,11 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
   const atoms = useMemo(() => structure ? displayAtoms(structure, repeats) : [], [structure, repeats]);
   const parameters = useMemo(() => structure ? latticeParameters(structure.lattice) : null, [structure]);
   const composition: Record<string, number> = useMemo(() => structure ? structureComposition(structure) : {}, [structure]);
+  useEffect(() => {
+    if (!restored) return;
+    version.current++; cancelWorker(); setStructures([restored.value]); setActiveIndex(0); setRepeats(1); setSelected([]); setError(null); setBusy(false);
+  }, [restored?.token]);
+  useEffect(() => { if (structure && structure !== restored?.value) onStructure?.(structure); }, [structure]);
 
   function cancelWorker() {
     worker.current?.terminate(); worker.current = null;
@@ -164,6 +171,7 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
       <div className="structure-view-heading"><div><h3>{structure.name}</h3><p>{structure.source.filename} · {structure.source.providerLabel ?? (structure.source.format === "materials-project" ? "Materials Project" : structure.source.format.toUpperCase())}</p></div>
         {!materialMode && structures.length > 1 && <label>{t("CIF 数据块", "CIF block")} <select value={activeIndex} onChange={event => { setRepeats(1); setActiveIndex(Number(event.target.value)); }}>{structures.map((item, i) => <option key={i} value={i}>{item.name}</option>)}</select></label>}
         <span className="structure-unlabelled">{materialMode ? t("数据库材料对应结构", "Structure linked by material ID") : t("未关联目标性质标签", "No target-property label")}</span></div>
+      {onUseStructure && <div className="structure-controls research-transfer-actions"><button type="button" onClick={() => onUseStructure(structure, "queue")}>加入 uMLIP 构型队列</button><button type="button" onClick={() => onUseStructure(structure, "geometry")}>几何量 → 白盒公式</button></div>}
       {structure.source.provenance && <details className="structure-feedback"><summary>{t("结构来源与版本", "Structure provenance and version")}</summary><p>{structure.source.provenance.reference}</p><p>{structure.source.provenance.datasetVersion} · {structure.source.fetchedAt}</p><a href={structure.source.provenance.url} target="_blank" rel="noopener noreferrer">{structure.source.provenance.url}</a></details>}
       <div className="structure-view-layout">
         <div className="structure-visual-area"><div className="structure-controls">

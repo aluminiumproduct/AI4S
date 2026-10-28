@@ -8,15 +8,17 @@ import MethodNote from "./MethodNote";
 interface Props {
   query: HubQuery; metadata: HubMetadata | null; count: number; loading: boolean; lang: "zh" | "en";
   onChange(query: HubQuery): void; onLoad(query: HubQuery): void;
+  recordIds?: string[]; onCalibration?(result: CalibrationResult, enabled: boolean): void; providedCalibration?: CalibrationResult | null; calibrationEnabled?: boolean;
 }
-export default function DataHubPanel({ query, metadata, count, loading, lang, onChange, onLoad }: Props) {
+export default function DataHubPanel({ query, metadata, count, loading, lang, onChange, onLoad, recordIds, onCalibration, providedCalibration, calibrationEnabled }: Props) {
   const zh = lang === "zh";
   const t = (a: string, b: string) => zh ? a : b;
   const [catalog, setCatalog] = useState<HubCatalog>({ sources: [] });
   const [text, setText] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [calibration, setCalibration] = useState<CalibrationResult | null>(null);
+  const [localCalibration, setCalibration] = useState<CalibrationResult | null>(null);
+  const calibration = providedCalibration === undefined ? localCalibration : providedCalibration;
   useEffect(() => {
     const controller = new AbortController();
     axios.get<HubCatalog>("/api/hub/catalog", { signal: controller.signal }).then(r => setCatalog(r.data)).catch(() => {});
@@ -51,7 +53,7 @@ export default function DataHubPanel({ query, metadata, count, loading, lang, on
   }
   async function calibrate() {
     setBusy(true); setMessage(null);
-    try { setCalibration((await axios.post("/api/hub/calibrate", { objective: query.objective, cohort })).data); }
+    try { const result = (await axios.post("/api/hub/calibrate", { objective: query.objective, cohort, ids: recordIds })).data; setCalibration(result); onCalibration?.(result, false); }
     catch (e) { showError(e); } finally { setBusy(false); }
   }
   const icons = { "mp-live": Globe2, "mp-snapshot": Database, "catalysis-hub": FlaskConical, "dual-fidelity": GitCompareArrows };
@@ -74,6 +76,7 @@ export default function DataHubPanel({ query, metadata, count, loading, lang, on
       <MethodNote lang={lang}>{t("保真度是方法层级标签，不代表已经证明的精度。", "Fidelity labels describe method tiers, not proven accuracy.")}</MethodNote>
       {(query.source === "catalysis-hub" || query.source === "dual-fidelity") && <details className="text-xs"><summary className="cursor-pointer font-semibold text-teal-900">{t("导入有来源的数据", "Import sourced observations")}</summary><div className="mt-3 space-y-2"><p className="text-[10px] text-slate-500">{t("尚未预置实验数据。每条记录需要单位、方法、条件组和真实引用；模板中的空值必须补齐。", "No experimental data is preloaded. Supply units, method, cohort and real citations.")}</p><button type="button" disabled={locked} className="underline" onClick={() => void template()}>{t("填充 JSON 导入模板", "Load JSON template")}</button><label className="block">{t("读取 JSON 文件", "Read JSON file")}<input type="file" accept=".json,application/json" disabled={locked} onChange={async e => { const f = e.target.files?.[0]; if (f) { if (f.size > 8 * 1024 * 1024) setMessage("JSON exceeds8MB"); else setText(await f.text()); } }} /></label><textarea id="hub-import-json" aria-label={t("导入数据 JSON", "Import data JSON")} className={`${input} font-mono`} rows={7} value={text} onChange={e => setText(e.target.value)} spellCheck={false} /><button type="button" disabled={locked || !text} className="rounded-lg border border-teal-700 px-3 py-2 text-teal-900 disabled:opacity-40" onClick={() => void importData()}>{t("校验并写入本地库", "Validate and import")}</button></div></details>}
       {query.source === "dual-fidelity" && <div className="rounded-xl border border-teal-100 p-3 text-xs"><h3 className="font-semibold">{t("10 组实验偏差校准", "10-group experimental calibration")}</h3><p className="mt-2 text-[10px] text-slate-500">{t("同目标、单位和配对依据；按组成隔离，训练与独立留出分开。校准不会改写原始观测。", "Same target/units/basis, split by composition; original observations are preserved.")}</p><button type="button" disabled={locked || !cohort || (local?.count ?? 0) < 10} onClick={() => void calibrate()} className="mt-2 rounded-lg bg-teal-50 px-3 py-2 text-teal-900 disabled:opacity-30">{t("拟合常数偏差", "Fit constant bias")}</button>{calibration && <div className="mt-2 space-y-1" role="status"><p>Δ = {calibration.correction.toPrecision(6)} {calibration.unit}</p><p>{t("校准 / 留出组", "Calibration / holdout groups")}: {calibration.calibrationGroups} / {calibration.validationGroups}</p>{calibration.validation ? <><p>DFT MAE: {calibration.validation.baselineMAE.toPrecision(5)}</p><p>{t("修正后 MAE", "Corrected MAE")}: {calibration.validation.correctedMAE.toPrecision(5)}</p></> : <p>{t("独立留出不足，尚无验证指标。", "Insufficient independent holdout for validation.")}</p>}<p className="text-[10px]">{calibration.note}</p></div>}</div>}
+      {calibration && query.source === "dual-fidelity" && onCalibration && <div className="research-calibration-toggle"><label><input type="checkbox" checked={!!calibrationEnabled} onChange={e => onCalibration(calibration, e.target.checked)} />校准预测：DFT → 实验尺度</label><p>Δ = {calibration.correction.toPrecision(5)} {calibration.unit} · 启用后10组校准记录计入已观测。</p></div>}
       {message && <p role="alert" className="break-words rounded-lg bg-amber-50 p-2 text-xs text-amber-900">{message}</p>}
     </div>
   </section>;
