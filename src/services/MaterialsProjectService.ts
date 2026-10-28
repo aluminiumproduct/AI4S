@@ -30,7 +30,7 @@ export class MaterialsProjectService {
         params: {
           elements: "Li,O",
           _limit: limit,
-          _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,structure",
+          _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,energy_above_hull,structure",
         },
       });
 

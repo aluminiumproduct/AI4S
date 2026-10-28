@@ -15,7 +15,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "benchmark:models": "tsx scripts/benchmark-models.ts",
     "hub:capture": "tsx scripts/capture-mp-snapshot.ts",
-    "verify:umlip": "tsx scripts/verify-umlip.ts"
+    "verify:umlip": "tsx scripts/verify-umlip.ts",
+    "benchmark:pareto": "tsx scripts/benchmark-pareto.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

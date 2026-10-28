@@ -46,6 +46,7 @@ import DataHubPanel from "./components/DataHubPanel";
 import { DEFAULT_HUB_QUERY, OBJECTIVES, sourceLabel, type HubMetadata, type HubQuery, type ObjectiveDirection } from "./dataHub";
 import { useDistillation } from "./engine/distillation/useDistillation";
 import { DescriptorMap, DistillationPanel } from "./components/DistillationPanel";
+import ParetoExplorer from "./components/ParetoExplorer";
 
 const engine = new MaterialsEngine();
 
@@ -407,7 +408,7 @@ export default function App() {
         </div>
       </header>
 
-      {!isLoadingData && (runError || stopReason) && (
+      {isLoaded && !isLoadingData && (runError || stopReason) && (
         <p role={runError ? "alert" : "status"} className="max-w-7xl mx-auto mb-6 p-3 rounded-lg bg-amber-50 text-amber-900">
           {runError || (stopReason === "empty-pool"
             ? (lang === "zh" ? "没有候选材料，请同步数据后再运行。" : "No candidate materials. Sync data before running.")
@@ -416,6 +417,8 @@ export default function App() {
               : (lang === "zh" ? "候选材料已全部采样。" : "All candidate materials have been sampled."))}
         </p>
       )}
+
+      <ParetoExplorer materials={pool} lang={lang} />
 
       <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Sidebar: Config & Stats */}

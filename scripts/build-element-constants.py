@@ -76,7 +76,7 @@ def build(pm_bytes, ase_bytes):
         choices = [r for r in ionic if r['oxidationState'] == oxidation and r['coordination'] == 'VI']
         choices.sort(key=lambda r: {'unspecified':0,'High Spin':1,'Low Spin':2}.get(r['spin'],3))
         elements[symbol] = {
-            'atomicNumber':z, 'name':row['Name'],
+            'atomicNumber':z, 'atomicMass':numeric(row.get('Atomic mass')), 'name':row['Name'],
             'electronegativityPauling':numeric(row.get('X')),
             'covalentRadiusAngstrom':numeric(radii[z]) if z <= 96 and z < len(radii) else None,
             'neutralConfiguration':configuration,
@@ -88,7 +88,7 @@ def build(pm_bytes, ase_bytes):
         }
     assert len(elements) == 118
     return {
-        'schemaVersion':'ai4s-elements-1.0.0',
+        'schemaVersion':'ai4s-elements-1.1.0',
         'provenance':{
             'pymatgen':{'version':'2025.6.14','commit':PM_REF,'url':PM_URL,'sha256':hashlib.sha256(pm_bytes).hexdigest(),'license':'MIT'},
             'ase':{'commit':ASE_REF,'url':ASE_URL,'sha256':hashlib.sha256(ase_bytes).hexdigest(),'license':'LGPL-2.1-or-later; numerical data only'},
@@ -96,7 +96,7 @@ def build(pm_bytes, ase_bytes):
             'ionicRadii':{'doi':'10.1107/S0567739476001551','description':'Shannon effective ionic radii (ionic_radius, not crystal_radius), indexed by oxidation state, coordination and spin.'},
         },
         'conventions':{
-            'radiiUnit':'angstrom', 'energyUnit':'eV',
+            'radiiUnit':'angstrom', 'energyUnit':'eV', 'atomicMassUnit':'u; representative atomic weights from pinned pymatgen data',
             'hardness':'Atomic finite-difference descriptor eta=(I1-electronAffinity)/2. Not an oxide bond dissociation energy.',
             'valenceElectrons':'Neutral configuration count: outer-shell s/p for main-group; outer s plus (n-1)d for d-block; outer s plus (n-1)d and (n-2)f for f-block. This convention is not a compound oxidation state.',
             'referenceIonicRadius':'Fixed documented oxidation state, VI coordination; unspecified spin preferred, otherwise High Spin then Low Spin. Not inferred from composition or structure.',

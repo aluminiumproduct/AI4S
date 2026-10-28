@@ -18,6 +18,8 @@ export interface Material {
   features: number[];
   descriptors?: CompositionDescriptors;
   targetKind?: ObjectiveId | "synthetic-score";
+  energyAboveHull?: number | null;
+  formationEnergyPerAtom?: number | null;
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost
   predictedMean?: number;

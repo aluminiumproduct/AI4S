@@ -5,6 +5,11 @@ import type { ObjectiveDirection } from "../dataHub";
 export type AcquisitionStrategy = "Random" | "Uncertainty" | "EI" | "UCB";
 
 export class AcquisitionFunction {
+  /** EI of the augmented-Tchebycheff GP. Material price is already an objective. */
+  static computeParEGO(prediction: { mean: number; std: number }, bestScalar: number): number {
+    return this.expectedImprovement(prediction.mean, prediction.std, bestScalar);
+  }
+
   static compute(
     material: Material, 
     strategy: AcquisitionStrategy, 

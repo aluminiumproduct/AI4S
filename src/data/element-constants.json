@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "ai4s-elements-1.0.0",
+  "schemaVersion": "ai4s-elements-1.1.0",
   "provenance": {
     "pymatgen": {
       "version": "2025.6.14",
@@ -26,6 +26,7 @@
   "conventions": {
     "radiiUnit": "angstrom",
     "energyUnit": "eV",
+    "atomicMassUnit": "u; representative atomic weights from pinned pymatgen data",
     "hardness": "Atomic finite-difference descriptor eta=(I1-electronAffinity)/2. Not an oxide bond dissociation energy.",
     "valenceElectrons": "Neutral configuration count: outer-shell s/p for main-group; outer s plus (n-1)d for d-block; outer s plus (n-1)d and (n-2)f for f-block. This convention is not a compound oxidation state.",
     "referenceIonicRadius": "Fixed documented oxidation state, VI coordination; unspecified spin preferred, otherwise High Spin then Low Spin. Not inferred from composition or structure.",
@@ -34,6 +35,7 @@
   "elements": {
     "H": {
       "atomicNumber": 1,
+      "atomicMass": 1.00794,
       "name": "Hydrogen",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 0.31,
@@ -62,6 +64,7 @@
     },
     "He": {
       "atomicNumber": 2,
+      "atomicMass": 4.002602,
       "name": "Helium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": 0.28,
@@ -75,6 +78,7 @@
     },
     "Li": {
       "atomicNumber": 3,
+      "atomicMass": 6.941,
       "name": "Lithium",
       "electronegativityPauling": 0.98,
       "covalentRadiusAngstrom": 1.28,
@@ -116,6 +120,7 @@
     },
     "Be": {
       "atomicNumber": 4,
+      "atomicMass": 9.012182,
       "name": "Beryllium",
       "electronegativityPauling": 1.57,
       "covalentRadiusAngstrom": 0.96,
@@ -157,6 +162,7 @@
     },
     "B": {
       "atomicNumber": 5,
+      "atomicMass": 10.811,
       "name": "Boron",
       "electronegativityPauling": 2.04,
       "covalentRadiusAngstrom": 0.84,
@@ -198,6 +204,7 @@
     },
     "C": {
       "atomicNumber": 6,
+      "atomicMass": 12.0107,
       "name": "Carbon",
       "electronegativityPauling": 2.55,
       "covalentRadiusAngstrom": 0.76,
@@ -239,6 +246,7 @@
     },
     "N": {
       "atomicNumber": 7,
+      "atomicMass": 14.0067,
       "name": "Nitrogen",
       "electronegativityPauling": 3.04,
       "covalentRadiusAngstrom": 0.71,
@@ -281,6 +289,7 @@
     },
     "O": {
       "atomicNumber": 8,
+      "atomicMass": 15.9994,
       "name": "Oxygen",
       "electronegativityPauling": 3.44,
       "covalentRadiusAngstrom": 0.66,
@@ -336,6 +345,7 @@
     },
     "F": {
       "atomicNumber": 9,
+      "atomicMass": 18.9984032,
       "name": "Fluorine",
       "electronegativityPauling": 3.98,
       "covalentRadiusAngstrom": 0.57,
@@ -391,6 +401,7 @@
     },
     "Ne": {
       "atomicNumber": 10,
+      "atomicMass": 20.1797,
       "name": "Neon",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": 0.58,
@@ -404,6 +415,7 @@
     },
     "Na": {
       "atomicNumber": 11,
+      "atomicMass": 22.98976928,
       "name": "Sodium",
       "electronegativityPauling": 0.93,
       "covalentRadiusAngstrom": 1.66,
@@ -473,6 +485,7 @@
     },
     "Mg": {
       "atomicNumber": 12,
+      "atomicMass": 24.305,
       "name": "Magnesium",
       "electronegativityPauling": 1.31,
       "covalentRadiusAngstrom": 1.41,
@@ -521,6 +534,7 @@
     },
     "Al": {
       "atomicNumber": 13,
+      "atomicMass": 26.9815386,
       "name": "Aluminum",
       "electronegativityPauling": 1.61,
       "covalentRadiusAngstrom": 1.21,
@@ -562,6 +576,7 @@
     },
     "Si": {
       "atomicNumber": 14,
+      "atomicMass": 28.0855,
       "name": "Silicon",
       "electronegativityPauling": 1.9,
       "covalentRadiusAngstrom": 1.11,
@@ -596,6 +611,7 @@
     },
     "P": {
       "atomicNumber": 15,
+      "atomicMass": 30.973762,
       "name": "Phosphorus",
       "electronegativityPauling": 2.19,
       "covalentRadiusAngstrom": 1.07,
@@ -644,6 +660,7 @@
     },
     "S": {
       "atomicNumber": 16,
+      "atomicMass": 32.065,
       "name": "Sulfur",
       "electronegativityPauling": 2.58,
       "covalentRadiusAngstrom": 1.05,
@@ -692,6 +709,7 @@
     },
     "Cl": {
       "atomicNumber": 17,
+      "atomicMass": 35.453,
       "name": "Chlorine",
       "electronegativityPauling": 3.16,
       "covalentRadiusAngstrom": 1.02,
@@ -740,6 +758,7 @@
     },
     "Ar": {
       "atomicNumber": 18,
+      "atomicMass": 39.948,
       "name": "Argon",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": 1.06,
@@ -753,6 +772,7 @@
     },
     "K": {
       "atomicNumber": 19,
+      "atomicMass": 39.0983,
       "name": "Potassium",
       "electronegativityPauling": 0.82,
       "covalentRadiusAngstrom": 2.03,
@@ -822,6 +842,7 @@
     },
     "Ca": {
       "atomicNumber": 20,
+      "atomicMass": 40.078,
       "name": "Calcium",
       "electronegativityPauling": 1,
       "covalentRadiusAngstrom": 1.76,
@@ -884,6 +905,7 @@
     },
     "Sc": {
       "atomicNumber": 21,
+      "atomicMass": 44.955912,
       "name": "Scandium",
       "electronegativityPauling": 1.36,
       "covalentRadiusAngstrom": 1.7,
@@ -918,6 +940,7 @@
     },
     "Ti": {
       "atomicNumber": 22,
+      "atomicMass": 47.867,
       "name": "Titanium",
       "electronegativityPauling": 1.54,
       "covalentRadiusAngstrom": 1.6,
@@ -980,6 +1003,7 @@
     },
     "V": {
       "atomicNumber": 23,
+      "atomicMass": 50.9415,
       "name": "Vanadium",
       "electronegativityPauling": 1.63,
       "covalentRadiusAngstrom": 1.53,
@@ -1056,6 +1080,7 @@
     },
     "Cr": {
       "atomicNumber": 24,
+      "atomicMass": 51.9961,
       "name": "Chromium",
       "electronegativityPauling": 1.66,
       "covalentRadiusAngstrom": 1.39,
@@ -1146,6 +1171,7 @@
     },
     "Mn": {
       "atomicNumber": 25,
+      "atomicMass": 54.938045,
       "name": "Manganese",
       "electronegativityPauling": 1.55,
       "covalentRadiusAngstrom": 1.39,
@@ -1271,6 +1297,7 @@
     },
     "Fe": {
       "atomicNumber": 26,
+      "atomicMass": 55.845,
       "name": "Iron",
       "electronegativityPauling": 1.83,
       "covalentRadiusAngstrom": 1.32,
@@ -1375,6 +1402,7 @@
     },
     "Co": {
       "atomicNumber": 27,
+      "atomicMass": 58.933195,
       "name": "Cobalt",
       "electronegativityPauling": 1.88,
       "covalentRadiusAngstrom": 1.26,
@@ -1458,6 +1486,7 @@
     },
     "Ni": {
       "atomicNumber": 28,
+      "atomicMass": 58.6934,
       "name": "Nickel",
       "electronegativityPauling": 1.91,
       "covalentRadiusAngstrom": 1.24,
@@ -1527,6 +1556,7 @@
     },
     "Cu": {
       "atomicNumber": 29,
+      "atomicMass": 63.546,
       "name": "Copper",
       "electronegativityPauling": 1.9,
       "covalentRadiusAngstrom": 1.32,
@@ -1603,6 +1633,7 @@
     },
     "Zn": {
       "atomicNumber": 30,
+      "atomicMass": 65.409,
       "name": "Zinc",
       "electronegativityPauling": 1.65,
       "covalentRadiusAngstrom": 1.22,
@@ -1651,6 +1682,7 @@
     },
     "Ga": {
       "atomicNumber": 31,
+      "atomicMass": 69.723,
       "name": "Gallium",
       "electronegativityPauling": 1.81,
       "covalentRadiusAngstrom": 1.22,
@@ -1692,6 +1724,7 @@
     },
     "Ge": {
       "atomicNumber": 32,
+      "atomicMass": 72.64,
       "name": "Germanium",
       "electronegativityPauling": 2.01,
       "covalentRadiusAngstrom": 1.2,
@@ -1733,6 +1766,7 @@
     },
     "As": {
       "atomicNumber": 33,
+      "atomicMass": 74.9216,
       "name": "Arsenic",
       "electronegativityPauling": 2.18,
       "covalentRadiusAngstrom": 1.19,
@@ -1774,6 +1808,7 @@
     },
     "Se": {
       "atomicNumber": 34,
+      "atomicMass": 78.96,
       "name": "Selenium",
       "electronegativityPauling": 2.55,
       "covalentRadiusAngstrom": 1.2,
@@ -1822,6 +1857,7 @@
     },
     "Br": {
       "atomicNumber": 35,
+      "atomicMass": 79.904,
       "name": "Bromine",
       "electronegativityPauling": 2.96,
       "covalentRadiusAngstrom": 1.2,
@@ -1877,6 +1913,7 @@
     },
     "Kr": {
       "atomicNumber": 36,
+      "atomicMass": 83.798,
       "name": "Krypton",
       "electronegativityPauling": 3,
       "covalentRadiusAngstrom": 1.16,
@@ -1890,6 +1927,7 @@
     },
     "Rb": {
       "atomicNumber": 37,
+      "atomicMass": 85.4678,
       "name": "Rubidium",
       "electronegativityPauling": 0.82,
       "covalentRadiusAngstrom": 2.2,
@@ -1966,6 +2004,7 @@
     },
     "Sr": {
       "atomicNumber": 38,
+      "atomicMass": 87.62,
       "name": "Strontium",
       "electronegativityPauling": 0.95,
       "covalentRadiusAngstrom": 1.95,
@@ -2028,6 +2067,7 @@
     },
     "Y": {
       "atomicNumber": 39,
+      "atomicMass": 88.90585,
       "name": "Yttrium",
       "electronegativityPauling": 1.22,
       "covalentRadiusAngstrom": 1.9,
@@ -2076,6 +2116,7 @@
     },
     "Zr": {
       "atomicNumber": 40,
+      "atomicMass": 91.224,
       "name": "Zirconium",
       "electronegativityPauling": 1.33,
       "covalentRadiusAngstrom": 1.75,
@@ -2138,6 +2179,7 @@
     },
     "Nb": {
       "atomicNumber": 41,
+      "atomicMass": 92.90638,
       "name": "Niobium",
       "electronegativityPauling": 1.6,
       "covalentRadiusAngstrom": 1.64,
@@ -2207,6 +2249,7 @@
     },
     "Mo": {
       "atomicNumber": 42,
+      "atomicMass": 95.94,
       "name": "Molybdenum",
       "electronegativityPauling": 2.16,
       "covalentRadiusAngstrom": 1.54,
@@ -2283,6 +2326,7 @@
     },
     "Tc": {
       "atomicNumber": 43,
+      "atomicMass": 98,
       "name": "Technetium",
       "electronegativityPauling": 1.9,
       "covalentRadiusAngstrom": 1.47,
@@ -2325,6 +2369,7 @@
     },
     "Ru": {
       "atomicNumber": 44,
+      "atomicMass": 101.07,
       "name": "Ruthenium",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 1.46,
@@ -2380,6 +2425,7 @@
     },
     "Rh": {
       "atomicNumber": 45,
+      "atomicMass": 102.9055,
       "name": "Rhodium",
       "electronegativityPauling": 2.28,
       "covalentRadiusAngstrom": 1.42,
@@ -2421,6 +2467,7 @@
     },
     "Pd": {
       "atomicNumber": 46,
+      "atomicMass": 106.42,
       "name": "Palladium",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 1.39,
@@ -2476,6 +2523,7 @@
     },
     "Ag": {
       "atomicNumber": 47,
+      "atomicMass": 107.8682,
       "name": "Silver",
       "electronegativityPauling": 1.93,
       "covalentRadiusAngstrom": 1.45,
@@ -2573,6 +2621,7 @@
     },
     "Cd": {
       "atomicNumber": 48,
+      "atomicMass": 112.411,
       "name": "Cadmium",
       "electronegativityPauling": 1.69,
       "covalentRadiusAngstrom": 1.44,
@@ -2635,6 +2684,7 @@
     },
     "In": {
       "atomicNumber": 49,
+      "atomicMass": 114.818,
       "name": "Indium",
       "electronegativityPauling": 1.78,
       "covalentRadiusAngstrom": 1.42,
@@ -2676,6 +2726,7 @@
     },
     "Sn": {
       "atomicNumber": 50,
+      "atomicMass": 118.71,
       "name": "Tin",
       "electronegativityPauling": 1.96,
       "covalentRadiusAngstrom": 1.39,
@@ -2731,6 +2782,7 @@
     },
     "Sb": {
       "atomicNumber": 51,
+      "atomicMass": 121.76,
       "name": "Antimony",
       "electronegativityPauling": 2.05,
       "covalentRadiusAngstrom": 1.39,
@@ -2779,6 +2831,7 @@
     },
     "Te": {
       "atomicNumber": 52,
+      "atomicMass": 127.6,
       "name": "Tellurium",
       "electronegativityPauling": 2.1,
       "covalentRadiusAngstrom": 1.38,
@@ -2841,6 +2894,7 @@
     },
     "I": {
       "atomicNumber": 53,
+      "atomicMass": 126.90447,
       "name": "Iodine",
       "electronegativityPauling": 2.66,
       "covalentRadiusAngstrom": 1.39,
@@ -2896,6 +2950,7 @@
     },
     "Xe": {
       "atomicNumber": 54,
+      "atomicMass": 131.293,
       "name": "Xenon",
       "electronegativityPauling": 2.6,
       "covalentRadiusAngstrom": 1.4,
@@ -2924,6 +2979,7 @@
     },
     "Cs": {
       "atomicNumber": 55,
+      "atomicMass": 132.9054519,
       "name": "Cesium",
       "electronegativityPauling": 0.79,
       "covalentRadiusAngstrom": 2.44,
@@ -2986,6 +3042,7 @@
     },
     "Ba": {
       "atomicNumber": 56,
+      "atomicMass": 137.327,
       "name": "Barium",
       "electronegativityPauling": 0.89,
       "covalentRadiusAngstrom": 2.15,
@@ -3055,6 +3112,7 @@
     },
     "La": {
       "atomicNumber": 57,
+      "atomicMass": 138.90547,
       "name": "Lanthanum",
       "electronegativityPauling": 1.1,
       "covalentRadiusAngstrom": 2.07,
@@ -3117,6 +3175,7 @@
     },
     "Ce": {
       "atomicNumber": 58,
+      "atomicMass": 140.116,
       "name": "Cerium",
       "electronegativityPauling": 1.12,
       "covalentRadiusAngstrom": 2.04,
@@ -3207,6 +3266,7 @@
     },
     "Pr": {
       "atomicNumber": 59,
+      "atomicMass": 140.90765,
       "name": "Praseodymium",
       "electronegativityPauling": 1.13,
       "covalentRadiusAngstrom": 2.03,
@@ -3262,6 +3322,7 @@
     },
     "Nd": {
       "atomicNumber": 60,
+      "atomicMass": 144.242,
       "name": "Neodymium",
       "electronegativityPauling": 1.14,
       "covalentRadiusAngstrom": 2.01,
@@ -3324,6 +3385,7 @@
     },
     "Pm": {
       "atomicNumber": 61,
+      "atomicMass": 145,
       "name": "Promethium",
       "electronegativityPauling": 1.13,
       "covalentRadiusAngstrom": 1.99,
@@ -3365,6 +3427,7 @@
     },
     "Sm": {
       "atomicNumber": 62,
+      "atomicMass": 150.36,
       "name": "Samarium",
       "electronegativityPauling": 1.17,
       "covalentRadiusAngstrom": 1.98,
@@ -3441,6 +3504,7 @@
     },
     "Eu": {
       "atomicNumber": 63,
+      "atomicMass": 151.964,
       "name": "Europium",
       "electronegativityPauling": 1.2,
       "covalentRadiusAngstrom": 1.98,
@@ -3517,6 +3581,7 @@
     },
     "Gd": {
       "atomicNumber": 64,
+      "atomicMass": 157.25,
       "name": "Gadolinium",
       "electronegativityPauling": 1.2,
       "covalentRadiusAngstrom": 1.96,
@@ -3565,6 +3630,7 @@
     },
     "Tb": {
       "atomicNumber": 65,
+      "atomicMass": 158.92535,
       "name": "Terbium",
       "electronegativityPauling": 1.1,
       "covalentRadiusAngstrom": 1.94,
@@ -3627,6 +3693,7 @@
     },
     "Dy": {
       "atomicNumber": 66,
+      "atomicMass": 162.5,
       "name": "Dysprosium",
       "electronegativityPauling": 1.22,
       "covalentRadiusAngstrom": 1.92,
@@ -3696,6 +3763,7 @@
     },
     "Ho": {
       "atomicNumber": 67,
+      "atomicMass": 164.93032,
       "name": "Holmium",
       "electronegativityPauling": 1.23,
       "covalentRadiusAngstrom": 1.92,
@@ -3744,6 +3812,7 @@
     },
     "Er": {
       "atomicNumber": 68,
+      "atomicMass": 167.259,
       "name": "Erbium",
       "electronegativityPauling": 1.24,
       "covalentRadiusAngstrom": 1.89,
@@ -3792,6 +3861,7 @@
     },
     "Tm": {
       "atomicNumber": 69,
+      "atomicMass": 168.93421,
       "name": "Thulium",
       "electronegativityPauling": 1.25,
       "covalentRadiusAngstrom": 1.9,
@@ -3847,6 +3917,7 @@
     },
     "Yb": {
       "atomicNumber": 70,
+      "atomicMass": 173.04,
       "name": "Ytterbium",
       "electronegativityPauling": 1.1,
       "covalentRadiusAngstrom": 1.87,
@@ -3916,6 +3987,7 @@
     },
     "Lu": {
       "atomicNumber": 71,
+      "atomicMass": 174.967,
       "name": "Lutetium",
       "electronegativityPauling": 1.27,
       "covalentRadiusAngstrom": 1.87,
@@ -3957,6 +4029,7 @@
     },
     "Hf": {
       "atomicNumber": 72,
+      "atomicMass": 178.49,
       "name": "Hafnium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": 1.75,
@@ -4005,6 +4078,7 @@
     },
     "Ta": {
       "atomicNumber": 73,
+      "atomicMass": 180.94788,
       "name": "Tantalum",
       "electronegativityPauling": 1.5,
       "covalentRadiusAngstrom": 1.7,
@@ -4060,6 +4134,7 @@
     },
     "W": {
       "atomicNumber": 74,
+      "atomicMass": 183.84,
       "name": "Tungsten",
       "electronegativityPauling": 2.36,
       "covalentRadiusAngstrom": 1.62,
@@ -4115,6 +4190,7 @@
     },
     "Re": {
       "atomicNumber": 75,
+      "atomicMass": 186.207,
       "name": "Rhenium",
       "electronegativityPauling": 1.9,
       "covalentRadiusAngstrom": 1.51,
@@ -4170,6 +4246,7 @@
     },
     "Os": {
       "atomicNumber": 76,
+      "atomicMass": 190.23,
       "name": "Osmium",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 1.44,
@@ -4232,6 +4309,7 @@
     },
     "Ir": {
       "atomicNumber": 77,
+      "atomicMass": 192.217,
       "name": "Iridium",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 1.41,
@@ -4273,6 +4351,7 @@
     },
     "Pt": {
       "atomicNumber": 78,
+      "atomicMass": 195.084,
       "name": "Platinum",
       "electronegativityPauling": 2.28,
       "covalentRadiusAngstrom": 1.36,
@@ -4321,6 +4400,7 @@
     },
     "Au": {
       "atomicNumber": 79,
+      "atomicMass": 196.966569,
       "name": "Gold",
       "electronegativityPauling": 2.54,
       "covalentRadiusAngstrom": 1.36,
@@ -4369,6 +4449,7 @@
     },
     "Hg": {
       "atomicNumber": 80,
+      "atomicMass": 200.59,
       "name": "Mercury",
       "electronegativityPauling": 2,
       "covalentRadiusAngstrom": 1.32,
@@ -4431,6 +4512,7 @@
     },
     "Tl": {
       "atomicNumber": 81,
+      "atomicMass": 204.3833,
       "name": "Thallium",
       "electronegativityPauling": 1.62,
       "covalentRadiusAngstrom": 1.45,
@@ -4493,6 +4575,7 @@
     },
     "Pb": {
       "atomicNumber": 82,
+      "atomicMass": 207.2,
       "name": "Lead",
       "electronegativityPauling": 2.33,
       "covalentRadiusAngstrom": 1.46,
@@ -4597,6 +4680,7 @@
     },
     "Bi": {
       "atomicNumber": 83,
+      "atomicMass": 208.9804,
       "name": "Bismuth",
       "electronegativityPauling": 2.02,
       "covalentRadiusAngstrom": 1.48,
@@ -4645,6 +4729,7 @@
     },
     "Po": {
       "atomicNumber": 84,
+      "atomicMass": 210,
       "name": "Polonium",
       "electronegativityPauling": 2,
       "covalentRadiusAngstrom": 1.4,
@@ -4680,6 +4765,7 @@
     },
     "At": {
       "atomicNumber": 85,
+      "atomicMass": 210,
       "name": "Astatine",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 1.5,
@@ -4701,6 +4787,7 @@
     },
     "Rn": {
       "atomicNumber": 86,
+      "atomicMass": 220,
       "name": "Radon",
       "electronegativityPauling": 2.2,
       "covalentRadiusAngstrom": 1.5,
@@ -4714,6 +4801,7 @@
     },
     "Fr": {
       "atomicNumber": 87,
+      "atomicMass": 223,
       "name": "Francium",
       "electronegativityPauling": 0.7,
       "covalentRadiusAngstrom": 2.6,
@@ -4741,6 +4829,7 @@
     },
     "Ra": {
       "atomicNumber": 88,
+      "atomicMass": 226,
       "name": "Radium",
       "electronegativityPauling": 0.9,
       "covalentRadiusAngstrom": 2.21,
@@ -4769,6 +4858,7 @@
     },
     "Ac": {
       "atomicNumber": 89,
+      "atomicMass": 227,
       "name": "Actinium",
       "electronegativityPauling": 1.1,
       "covalentRadiusAngstrom": 2.15,
@@ -4796,6 +4886,7 @@
     },
     "Th": {
       "atomicNumber": 90,
+      "atomicMass": 232.03806,
       "name": "Thorium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": 2.06,
@@ -4858,6 +4949,7 @@
     },
     "Pa": {
       "atomicNumber": 91,
+      "atomicMass": 231.03588,
       "name": "Protactinium",
       "electronegativityPauling": 1.5,
       "covalentRadiusAngstrom": 2.0,
@@ -4920,6 +5012,7 @@
     },
     "U": {
       "atomicNumber": 92,
+      "atomicMass": 238.02891,
       "name": "Uranium",
       "electronegativityPauling": 1.38,
       "covalentRadiusAngstrom": 1.96,
@@ -5031,6 +5124,7 @@
     },
     "Np": {
       "atomicNumber": 93,
+      "atomicMass": 237,
       "name": "Neptunium",
       "electronegativityPauling": 1.36,
       "covalentRadiusAngstrom": 1.9,
@@ -5100,6 +5194,7 @@
     },
     "Pu": {
       "atomicNumber": 94,
+      "atomicMass": 244,
       "name": "Plutonium",
       "electronegativityPauling": 1.28,
       "covalentRadiusAngstrom": 1.87,
@@ -5155,6 +5250,7 @@
     },
     "Am": {
       "atomicNumber": 95,
+      "atomicMass": 243,
       "name": "Americium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": 1.8,
@@ -5224,6 +5320,7 @@
     },
     "Cm": {
       "atomicNumber": 96,
+      "atomicMass": 247,
       "name": "Curium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": 1.69,
@@ -5265,6 +5362,7 @@
     },
     "Bk": {
       "atomicNumber": 97,
+      "atomicMass": 247,
       "name": "Berkelium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5306,6 +5404,7 @@
     },
     "Cf": {
       "atomicNumber": 98,
+      "atomicMass": 251,
       "name": "Californium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5347,6 +5446,7 @@
     },
     "Es": {
       "atomicNumber": 99,
+      "atomicMass": 252,
       "name": "Einsteinium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5360,6 +5460,7 @@
     },
     "Fm": {
       "atomicNumber": 100,
+      "atomicMass": 257,
       "name": "Fermium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5373,6 +5474,7 @@
     },
     "Md": {
       "atomicNumber": 101,
+      "atomicMass": 258,
       "name": "Mendelevium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5386,6 +5488,7 @@
     },
     "No": {
       "atomicNumber": 102,
+      "atomicMass": 259,
       "name": "Nobelium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5407,6 +5510,7 @@
     },
     "Lr": {
       "atomicNumber": 103,
+      "atomicMass": 262,
       "name": "Lawrencium",
       "electronegativityPauling": 1.3,
       "covalentRadiusAngstrom": null,
@@ -5420,6 +5524,7 @@
     },
     "Rf": {
       "atomicNumber": 104,
+      "atomicMass": 267,
       "name": "Rutherfordium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5433,6 +5538,7 @@
     },
     "Db": {
       "atomicNumber": 105,
+      "atomicMass": 268,
       "name": "Dubnium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5446,6 +5552,7 @@
     },
     "Sg": {
       "atomicNumber": 106,
+      "atomicMass": 269,
       "name": "Seaborgium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5459,6 +5566,7 @@
     },
     "Bh": {
       "atomicNumber": 107,
+      "atomicMass": 270,
       "name": "Bohrium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5472,6 +5580,7 @@
     },
     "Hs": {
       "atomicNumber": 108,
+      "atomicMass": 270,
       "name": "Hassium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5485,6 +5594,7 @@
     },
     "Mt": {
       "atomicNumber": 109,
+      "atomicMass": 278,
       "name": "Meitnerium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5498,6 +5608,7 @@
     },
     "Ds": {
       "atomicNumber": 110,
+      "atomicMass": 281,
       "name": "Darmstadtium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5511,6 +5622,7 @@
     },
     "Rg": {
       "atomicNumber": 111,
+      "atomicMass": 282,
       "name": "Roentgenium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5524,6 +5636,7 @@
     },
     "Cn": {
       "atomicNumber": 112,
+      "atomicMass": 285,
       "name": "Copernicium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5537,6 +5650,7 @@
     },
     "Nh": {
       "atomicNumber": 113,
+      "atomicMass": 286,
       "name": "Nihonium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5550,6 +5664,7 @@
     },
     "Fl": {
       "atomicNumber": 114,
+      "atomicMass": 289,
       "name": "Flerovium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5563,6 +5678,7 @@
     },
     "Mc": {
       "atomicNumber": 115,
+      "atomicMass": 290,
       "name": "Moscovium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5576,6 +5692,7 @@
     },
     "Lv": {
       "atomicNumber": 116,
+      "atomicMass": 293,
       "name": "Livermorium",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5589,6 +5706,7 @@
     },
     "Ts": {
       "atomicNumber": 117,
+      "atomicMass": 294,
       "name": "Tennessine",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
@@ -5602,6 +5720,7 @@
     },
     "Og": {
       "atomicNumber": 118,
+      "atomicMass": 294,
       "name": "Oganesson",
       "electronegativityPauling": null,
       "covalentRadiusAngstrom": null,
