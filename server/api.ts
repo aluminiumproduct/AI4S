@@ -103,7 +103,7 @@ export function createApiApp({ network, env = process.env, materialsEndpoint = "
         const response = await network.request<{ data: unknown[] }>({
           url: materialsEndpoint, signal: scope.signal,
           headers: { accept: "application/json", "X-API-KEY": apiKey, "User-Agent": "AMI-AL-Prototype/2.0" },
-          params: { elements: "Li,O", _limit: pageSize, _skip: skip, _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom" },
+          params: { elements: "Li,O", _limit: pageSize, _skip: skip, _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,energy_above_hull" },
         });
         if (response.status < 200 || response.status >= 300) throw httpFailure(response.status);
         const data = response.data?.data;

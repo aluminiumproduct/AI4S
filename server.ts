@@ -7,6 +7,8 @@ import { createNetworkClient } from "./server/network";
 dotenv.config();
 
 async function startServer() {
+  const port = Number(process.env.PORT ?? 3000);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error("Invalid local server port");
   const network = createNetworkClient();
   const app = createApiApp({ network });
   const vite = process.env.NODE_ENV !== "production"
@@ -17,11 +19,11 @@ async function startServer() {
   if (vite) app.use(vite.middlewares);
   else app.use(express.static("dist"));
 
-  const server = app.listen(3000, "127.0.0.1", () => {
-    console.log("Server running on http://127.0.0.1:3000");
+  const server = app.listen(port, "127.0.0.1", () => {
+    console.log(`Server running on http://127.0.0.1:${port}`);
   });
   server.once("error", () => {
-    console.error("Cannot start the local server. Check that port 3000 is available.");
+    console.error(`Cannot start the local server. Check that port ${port} is available.`);
     network.close();
     void vite?.close();
     process.exitCode = 1;

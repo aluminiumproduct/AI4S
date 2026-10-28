@@ -40,6 +40,7 @@ import StructurePanel from "./components/StructurePanel";
 import type { MaterialStructureRequest } from "./structures/materialStructure";
 import { CompositionDescriptorPanel } from "./components/CompositionDescriptorPanel";
 import { hashString } from "./engine/SeededRandom";
+import ParetoExplorer from "./components/ParetoExplorer";
 
 const engine = new MaterialsEngine();
 
@@ -312,21 +313,6 @@ export default function App() {
 
   const topAdvisorCandidates = useMemo(() => advisorCandidates(pool), [pool]);
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-[#141414] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-bold uppercase tracking-widest opacity-60">正在初始化 AMI-AL 高通量实验环境并对接 Materials Project 数据库...</p>
-          <button type="button" onClick={openStructure} className="px-4 py-2 border rounded-lg">
-            {lang === "zh" ? "先导入结构 / 3D 查看" : "Import structure / 3D viewer"}
-          </button>
-        </div>
-        {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
-      </div>
-    );
-  }
-
   return (
     <div className={`min-h-screen ${theme === 'classic' ? 'bg-[#F5F5F0] text-[#141414]' : 'bg-[#F0F4F8] text-[#1A365D]'} font-sans transition-colors duration-500 p-6`}>
       {/* Header */}
@@ -390,7 +376,7 @@ export default function App() {
         </div>
       </header>
 
-      {!isLoadingData && (runError || stopReason) && (
+      {isLoaded && !isLoadingData && (runError || stopReason) && (
         <p role={runError ? "alert" : "status"} className="max-w-7xl mx-auto mb-6 p-3 rounded-lg bg-amber-50 text-amber-900">
           {runError || (stopReason === "empty-pool"
             ? (lang === "zh" ? "没有候选材料，请同步数据后再运行。" : "No candidate materials. Sync data before running.")
@@ -399,6 +385,8 @@ export default function App() {
               : (lang === "zh" ? "候选材料已全部采样。" : "All candidate materials have been sampled."))}
         </p>
       )}
+
+      <ParetoExplorer materials={pool} lang={lang} />
 
       <main className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
         {/* Sidebar: Config & Stats */}
@@ -591,7 +579,7 @@ export default function App() {
                           <div className={`${theme === 'classic' ? 'bg-[#141414] text-white' : 'bg-[#1A365D] text-white'} p-4 rounded-2xl shadow-2xl border-none text-[10px] space-y-1 backdrop-blur-md bg-opacity-90`}>
                             <p className="font-bold uppercase tracking-widest opacity-50 mb-2">{data.formula}</p>
                             <p>Cost: <span className="font-mono text-blue-300">{data.cost.toFixed(2)} units</span></p>
-                            <p>{data.targetKind === "synthetic-score" ? "Synthetic score" : "Band gap"}: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)}{data.targetKind === "band-gap" ? " eV" : ""}</span></p>
+                            <p>{data.targetKind === "synthetic-score" ? "Synthetic score" : "Band gap"}: <span className="font-mono text-emerald-400">{data.isSampled ? `${data.trueProperty.toFixed(3)}${data.targetKind === "band-gap" ? " eV" : ""}` : (lang === "zh" ? "待评价" : "Not evaluated")}</span></p>
                             <p className="pt-1 opacity-50 italic">χ mean / covalent-radius mean (Å)</p>
                           </div>
                         );

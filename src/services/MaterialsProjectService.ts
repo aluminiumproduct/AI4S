@@ -7,6 +7,7 @@ export interface MPData {
   composition: Record<string, any>;
   band_gap: number;
   formation_energy_per_atom: number;
+  energy_above_hull?: number | null;
   structure: any;
 }
 
@@ -28,7 +29,7 @@ export class MaterialsProjectService {
         params: {
           elements: "Li,O",
           _limit: limit,
-          _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,structure",
+          _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,energy_above_hull,structure",
         },
       });
 

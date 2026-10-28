@@ -41,6 +41,8 @@ export class MaterialsEngine {
         features,
         descriptors,
         targetKind: "band-gap",
+        energyAboveHull: typeof record.energy_above_hull === "number" && Number.isFinite(record.energy_above_hull) && record.energy_above_hull >= 0 ? record.energy_above_hull : null,
+        formationEnergyPerAtom: Number.isFinite(record.formation_energy_per_atom) ? record.formation_energy_per_atom : null,
         trueProperty: record.band_gap,
         cost: formulaCost(record.composition),
         isSampled: false,

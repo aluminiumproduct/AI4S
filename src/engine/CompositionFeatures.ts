@@ -10,6 +10,7 @@ export interface IonicRadius {
 
 export interface ElementConstants {
   atomicNumber: number;
+  atomicMass: number | null;
   name: string;
   electronegativityPauling: number | null;
   covalentRadiusAngstrom: number | null;

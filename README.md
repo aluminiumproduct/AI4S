@@ -141,6 +141,7 @@ npm run dev
 | `npm run lint` | 运行 TypeScript 类型检查（`tsc --noEmit`） |
 | `npm test` | 运行采样、数据、EI 及网络/API回归测试；使用本地模拟服务，不需要真实密钥或上游访问 |
 | `npm run clean` | 删除 `dist/` 目录 |
+| `npm run benchmark:pareto` | 相同初始样本与预算下，运行8组种子的ParEGO/随机基线对照 |
 
 ---
 
@@ -223,6 +224,27 @@ GPR 使用 RBF 核、Cholesky 分解和训练点距离中位数初始化长度�
 运行 `npm run benchmark:models` 可输出固定种子、50 个训练样本、1000 个独立合成候选的实际耗时和 RMSE。启动开发服务后打开 `/tests/browser/models.html` 可验证七种真实 Worker、主线程动画、取消和重启。合成数据结果不能作为真实材料精度或发现加速比。
 
 完整实现、参数、复杂度和科学边界见 [docs/surrogate-models.md](docs/surrogate-models.md)。
+
+## 多目标帕累托前沿寻优
+
+首页“高性能，也要好生意”面板联合优化功能表现、相稳定性与原料成本。点击“开启协同寻优”，后台 GPR 逐轮运行 ParEGO：重新标量化已观测三目标，按 EI 选择下一候选，并更新非支配前沿与固定尺度超体积。
+
+- **动态前沿**：横轴为功能表现，纵轴为采购成本优势，点色映射 Ehull；连线为三目标前沿的二维投影。演进回放可查看任一历史轮次。
+- **企业偏好驾驶舱**：性能旗舰、均衡优选、成本优先及三个滑块即时切换已观测方案，拖动不会增加观测或改写历史。
+- **两条数据路线**：96个确定性六金属演示组合；或使用 MP 候选的数据库带隙与 `energy_above_hull`。缺失稳定性或价格的材料单独计数，不以0补齐。
+- **原料成本**：按质量分数计算 USD/kg 价格代理。Al/Co/Ni/Cu/Ge/Sc 使用 USGS MCS 2026 中的2025e参考记录；其余预设为可编辑企业情景，逐项保留计量口径和来源。
+- **稳定性接入**：支持按材料ID导入已有 MLIP/DFT 相稳定性结果；格式与参考相集合要求见 [docs/pareto-search.md](docs/pareto-search.md)。本分支不运行 MLIP 结构计算。
+- **导出**：记录已观测候选、前沿历史、报价、偏好、种子和尺度，不导出未观测目标。
+
+与其他工作树同时演示时，可使用独立端口：
+
+```bash
+PORT=3002 DISABLE_HMR=true npm run dev
+```
+
+正式路演可先运行 `npm run build`，再用 `NODE_ENV=production PORT=3002 npm run dev` 启动静态构建与后端服务。
+
+详细算法、数据口径与验收项目见 [docs/pareto-search.md](docs/pareto-search.md)。
 
 ## 后端 API
 
