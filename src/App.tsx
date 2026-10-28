@@ -39,7 +39,8 @@ import { advisorCandidates, type AdvisorAction } from "./services/AdvisorContext
 import StructurePanel from "./components/StructurePanel";
 import type { MaterialStructureRequest } from "./structures/materialStructure";
 import { CompositionDescriptorPanel } from "./components/CompositionDescriptorPanel";
-import { hashString } from "./engine/SeededRandom";
+import { useDistillation } from "./engine/distillation/useDistillation";
+import { DescriptorMap, DistillationPanel } from "./components/DistillationPanel";
 
 const engine = new MaterialsEngine();
 
@@ -188,6 +189,9 @@ export default function App() {
   const modelClient = useRef<ModelWorkerClient | null>(null);
   const activeRun = useRef<AbortController | null>(null);
   const stopReason = getStopReason(pool, totalBudget);
+  const [formulaMap, setFormulaMap] = useState(false);
+  const distillation = useDistillation({ pool, runId: advisorRunId, iteration: state.iteration,
+    isRealData, modelConfig: modelSettings, isRunning: isAutoRunning, loading: isLoadingData });
 
   const cancelComputation = () => {
     runVersion.current++;
@@ -238,16 +242,6 @@ export default function App() {
       engine.cancelLoad();
     };
   }, []);
-
-  // Performance-optimized chart data (downsampling for large datasets)
-  const chartData = useMemo(() => {
-    const available = pool.filter(m => Number.isFinite(m.descriptors?.statistics.electronegativityPauling.mean)
-      && Number.isFinite(m.descriptors?.statistics.covalentRadiusAngstrom.mean));
-    if (available.length <= 2000) return available;
-    const sampled = available.filter(m => m.isSampled);
-    const unsampled = available.filter(m => !m.isSampled).sort((a, b) => hashString(a.id) - hashString(b.id));
-    return [...sampled, ...unsampled.slice(0, Math.max(0, 2000 - sampled.length))];
-  }, [pool]);
 
   const runIteration = async () => {
     if (iterationInFlight.current || isLoadingData) return;
@@ -340,6 +334,10 @@ export default function App() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => document.getElementById("distillation-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#a7bc95] bg-[#eaf2e2] text-[#456c44] text-xs font-bold">
+            <Sparkles size={14} /> {lang === "zh" ? "白盒公式" : "White-box formulas"}
+          </button>
           <button type="button" onClick={() => openAdvisor()} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#b5a36d] bg-[#f3ecd7] text-[#514522] text-xs font-bold">
             <Sparkles size={14} /> {lang === "zh" ? "AI 首席材料顾问" : "AI Materials Advisor"}
           </button>
@@ -400,9 +398,9 @@ export default function App() {
         </p>
       )}
 
-      <main className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Sidebar: Config & Stats */}
-        <div className="col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           <section className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl shadow-sm border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'}`}>
             <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
               <Database size={14} /> 数据概况
@@ -550,9 +548,9 @@ export default function App() {
         </div>
 
         {/* Main Content: Visualization */}
-        <div className="col-span-9 space-y-8">
+        <div id="distillation-workspace" className="lg:col-span-9 min-w-0 space-y-8">
           {/* Charts Row */}
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'} h-[350px]`}>
               <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>{t.regretCurve}</h3>
               <ResponsiveContainer width="100%" height="90%">
@@ -576,53 +574,11 @@ export default function App() {
               </ResponsiveContainer>
             </div>
 
-            <div className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'} h-[350px]`}>
-              <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>{t.similarityMap}</h3>
-              <ResponsiveContainer width="100%" height="90%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'classic' ? "#14141410" : "#2B6CB010"} />
-                  <XAxis type="number" dataKey="descriptors.statistics.electronegativityPauling.mean" name="χ mean" tick={{ fontSize: 10 }} />
-                  <YAxis type="number" dataKey="descriptors.statistics.covalentRadiusAngstrom.mean" name="Covalent radius mean" unit=" Å" tick={{ fontSize: 10 }} />
-                  <Tooltip 
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload as Material;
-                        return (
-                          <div className={`${theme === 'classic' ? 'bg-[#141414] text-white' : 'bg-[#1A365D] text-white'} p-4 rounded-2xl shadow-2xl border-none text-[10px] space-y-1 backdrop-blur-md bg-opacity-90`}>
-                            <p className="font-bold uppercase tracking-widest opacity-50 mb-2">{data.formula}</p>
-                            <p>Cost: <span className="font-mono text-blue-300">{data.cost.toFixed(2)} units</span></p>
-                            <p>{data.targetKind === "synthetic-score" ? "Synthetic score" : "Band gap"}: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)}{data.targetKind === "band-gap" ? " eV" : ""}</span></p>
-                            <p className="pt-1 opacity-50 italic">χ mean / covalent-radius mean (Å)</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Scatter 
-                    name="Unsampled" 
-                    data={chartData.filter(m => !m.isSampled)} 
-                    fill={theme === 'classic' ? "#141414" : "#2B6CB0"} 
-                    fillOpacity={0.05} 
-                  />
-                  <Scatter 
-                    name="Sampled" 
-                    data={chartData.filter(m => m.isSampled)} 
-                    fill={theme === 'classic' ? "#10B981" : "#38B2AC"} 
-                  >
-                    {chartData.filter(m => m.isSampled).map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.trueProperty === state.bestValue ? (theme === 'classic' ? "#F59E0B" : "#F6AD55") : (theme === 'classic' ? "#10B981" : "#38B2AC")} 
-                        stroke="#fff" 
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
+            <DescriptorMap key={advisorRunId} pool={pool} result={distillation.result} lang={lang}
+              enabled={formulaMap} onToggle={() => setFormulaMap(value => !value)} />
           </div>
+
+          <DistillationPanel controller={distillation} lang={lang} />
 
           <section className="rounded-3xl border border-[#d6dfce] bg-[#f5f6ec] p-5" aria-label={lang === "zh" ? "AI 优先候选" : "AI candidate shortlist"}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
