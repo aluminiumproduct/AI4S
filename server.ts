@@ -3,18 +3,27 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { createApiApp } from "./server/api";
 import { createNetworkClient } from "./server/network";
+import { HubStore } from "./server/hubStore";
+import { resolve } from "node:path";
+import { UmlipService } from "./server/umlip/service";
 import { closeSynthesisEngine } from "./server/synthesis";
 
 dotenv.config();
+dotenv.config({ path: ".env.umlip.local" });
 
 async function startServer() {
-  const port = Number(process.env.PORT || 3000);
   const network = createNetworkClient();
-  const app = createApiApp({ network });
+  const umlip = new UmlipService({ root: process.cwd(), env: process.env });
+  const hub = new HubStore(resolve(process.env.AI4S_HUB_DB || "data/ai4s_hub.db"));
+  const port = Number(process.env.PORT || 3000);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error("PORT must be 1–65535");
+  const hmrPort = Number(process.env.HMR_PORT || (port < 55000 ? port + 10000 : port - 10000));
+  if (!Number.isSafeInteger(hmrPort) || hmrPort < 1 || hmrPort > 65535) throw new Error("HMR_PORT must be 1–65535");
+  const app = createApiApp({ network, hub, umlip });
   const vite = process.env.NODE_ENV !== "production"
     ? await createViteServer({ server: {
       middlewareMode: true,
-      hmr: process.env.DISABLE_HMR === "true" ? false : { host: "127.0.0.1" },
+      hmr: process.env.DISABLE_HMR === "true" ? false : { host: "127.0.0.1", port: hmrPort },
     }, appType: "spa" }) : null;
   if (vite) app.use(vite.middlewares);
   else app.use(express.static("dist"));
@@ -23,8 +32,10 @@ async function startServer() {
     console.log(`Server running on http://127.0.0.1:${port}`);
   });
   server.once("error", () => {
-    console.error("Cannot start the local server. Check that port 3000 is available.");
+    console.error(`Cannot start the local server. Check that port ${port} is available.`);
     network.close();
+    hub.close();
+    umlip.close();
     void vite?.close();
     process.exitCode = 1;
   });
@@ -34,7 +45,8 @@ async function startServer() {
     closing = true;
     closeSynthesisEngine();
     network.close();
-    server.close();
+    umlip.close();
+    server.close(() => hub.close());
     server.closeIdleConnections();
     void vite?.close();
   };
@@ -43,6 +55,6 @@ async function startServer() {
 }
 
 startServer().catch(() => {
-  console.error("Server startup failed. Check that port 3000 is available and dependencies are installed.");
+  console.error("Server startup failed. Check the configured PORT, database path and installed dependencies.");
   process.exitCode = 1;
 });

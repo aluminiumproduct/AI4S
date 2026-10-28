@@ -1,10 +1,16 @@
 import { Material } from "../types";
 import { createSeededRandom, hashString } from "./SeededRandom";
+import type { ObjectiveDirection } from "../dataHub";
 import { constrainAcquisition, feasibilityPrior } from "../synthesis/feedback";
 
 export type AcquisitionStrategy = "Random" | "Uncertainty" | "EI" | "UCB";
 
 export class AcquisitionFunction {
+  /** EI of the augmented-Tchebycheff GP. Material price is already an objective. */
+  static computeParEGO(prediction: { mean: number; std: number }, bestScalar: number): number {
+    return this.expectedImprovement(prediction.mean, prediction.std, bestScalar);
+  }
+
   static compute(
     material: Material, 
     strategy: AcquisitionStrategy, 
@@ -12,6 +18,7 @@ export class AcquisitionFunction {
     kappa: number = 2.0,
     isCostAware: boolean = true,
     random: () => number = createSeededRandom(hashString(`${material.id}|${bestObserved}`)),
+    direction: ObjectiveDirection = "max",
   ): number {
     const { mean, std } = { 
       mean: material.predictedMean ?? 0,
@@ -29,11 +36,11 @@ export class AcquisitionFunction {
         break;
 
       case "UCB":
-        value = mean + kappa * std;
+        value = (direction === "min" ? -mean : mean) + kappa * std;
         break;
 
       case "EI":
-        value = this.expectedImprovement(mean, std, bestObserved);
+        value = direction === "min" ? this.expectedImprovement(-mean, std, -bestObserved) : this.expectedImprovement(mean, std, bestObserved);
         break;
 
       default:
@@ -44,7 +51,7 @@ export class AcquisitionFunction {
     if (isCostAware && material.cost > 0) {
       value /= material.cost;
     }
-    return constrainAcquisition(value, feasibilityPrior(material.synthesisFeedback));
+    return constrainAcquisition(value, feasibilityPrior(material.synthesisFeedback, material));
   }
 
   private static expectedImprovement(mean: number, std: number, best: number): number {

@@ -6,8 +6,11 @@ import { createHash } from "node:crypto";
 import type { NetworkClient } from "./network";
 import { isMaterialId } from "../src/structures/materialStructure";
 import type { PreflightResult } from "../src/synthesis/types";
+import type { HubStore } from "./hubStore";
+import type { StoredHubSource, StructureRef } from "../src/dataHub";
+import { normalizeComposition } from "../src/engine/CompositionFeatures";
 
-interface Dependencies { network: NetworkClient; env: Record<string, string | undefined>; materialsEndpoint: string }
+interface Dependencies { network: NetworkClient; env: Record<string, string | undefined>; materialsEndpoint: string; hub?: HubStore }
 
 interface Job { complete(error?: Error, result?: unknown): void }
 let engine: ChildProcessWithoutNullStreams | null = null;
@@ -65,7 +68,7 @@ export function runSynthesis(operation: string, payload: object, signal?: AbortS
   });
 }
 
-export function demoPreflight(composition: Record<string, number>, temperature = 900, atmosphere = "air", hull?: number): PreflightResult {
+export function demoPreflight(composition: Record<string, number>, temperature = 900, atmosphere = "air", hull?: number): PreflightResult & { score: number; energyAboveHull: number } {
   const elements = Object.keys(composition).filter(el => composition[el] > 0);
   const seed = elements.sort().join("").split("").reduce((n, ch) => n + ch.charCodeAt(0), 0);
   const estimated = hull ?? (elements.includes("Sr") && elements.includes("Ti") ? .008 : .008 + (seed % 110) / 1000);
@@ -81,28 +84,54 @@ export function demoPreflight(composition: Record<string, number>, temperature =
       { name: "烧结窗口", score: 94-temperaturePenalty*2 }, { name: "气氛适配", score: 96-atmospherePenalty*3 }] };
 }
 
-export function createSynthesisRouter({ network, env, materialsEndpoint }: Dependencies) {
+export function createSynthesisRouter({ network, env, materialsEndpoint, hub }: Dependencies) {
   const router = express.Router();
   router.use(express.json({ limit: "8mb" }));
   const cache = new Map<string, Promise<unknown>>();
   router.post("/preflight", async (req, res) => {
     try {
-      const { composition, temperature = 900, atmosphere = "air", materialId } = req.body;
-      if (!composition || !Object.keys(composition).length) return res.status(400).json({ error: "请选择材料组成" });
+      const { composition, temperature = 900, atmosphere = "air", materialId, structureRef, source } = req.body;
+      const fractions = normalizeComposition(composition);
+      if (!Number.isFinite(Number(temperature)) || Number(temperature) < 0 || Number(temperature) > 3000
+        || !["air", "oxygen", "inert", "reducing"].includes(atmosphere)) throw new Error("预审参数无效");
+      const matches = (other: Record<string, number>) => {
+        const compared = normalizeComposition(other);
+        return Object.keys(fractions).length === Object.keys(compared).length
+          && Object.entries(fractions).every(([element, amount]) => Math.abs(amount - (compared[element] ?? 0)) < 1e-8);
+      };
+      const unavailable = (formationEnergy: number | null = null, reference?: PreflightResult["reference"]): PreflightResult => ({
+        grade: "unknown", label: "缺少对应快照的稳定性数据", score: null, energyAboveHull: null, formationEnergy,
+        source: "unavailable", temperature: Number(temperature), atmosphere, competitors: [], factors: [], ...(reference ? { reference } : {}),
+      });
+      if (structureRef) {
+        const ref = structureRef as StructureRef;
+        if (!hub || !["mp-snapshot", "catalysis-hub", "dual-fidelity"].includes(ref.dataset)
+          || typeof ref.id !== "string" || materialId !== ref.id || typeof ref.revision !== "string" || !/^[a-f0-9]{64}$/.test(ref.revision)) throw new Error("无效的数据结构引用");
+        const stored = hub.structure(ref.dataset as StoredHubSource, ref.id, ref.revision);
+        if (!stored) return res.status(404).json({ error: "对应版本的本地结构记录不可用" });
+        if (!matches(stored.row.composition)) throw new Error("预审组成与对应快照不一致");
+        const reference = { ...ref, source: stored.row.source, method: stored.row.methodMeta, cohort: stored.row.cohort, provenance: structuredClone(stored.row.provenance) };
+        const hull = stored.row.values["energy-above-hull"], formation = stored.row.values["formation-energy"];
+        const formationEnergy = Number.isFinite(formation) ? formation! : null;
+        if (!Number.isFinite(hull) || hull! < 0) return res.json(unavailable(formationEnergy, reference));
+        return res.json({ ...demoPreflight(composition, Number(temperature), atmosphere, hull),
+          formationEnergy, source: "data-hub", reference });
+      }
+      if (!materialId) return res.json(demoPreflight(composition, Number(temperature), atmosphere));
       let hull: number | undefined, formation: number | null = null;
       const key = env.MP_API_KEY?.trim();
-      if (key && !/^YOUR_|^你的/.test(key) && isMaterialId(materialId)) {
+      if (source === "materials-project" && key && !/^YOUR_|^你的|[\r\n]/.test(key) && isMaterialId(materialId)) {
         try {
           const response = await network.request<{ data: any[] }>({ url: materialsEndpoint, signal: AbortSignal.timeout(8000),
             headers: { accept: "application/json", "X-API-KEY": key },
-            params: { material_ids: materialId, _limit: 1, _fields: "material_id,energy_above_hull,formation_energy_per_atom" } });
+            params: { material_ids: materialId, _limit: 1, _fields: "material_id,composition,energy_above_hull,formation_energy_per_atom" } });
           const row = response.data?.data?.[0];
-          if (response.status === 200 && row?.material_id === materialId && Number.isFinite(row.energy_above_hull)) {
+          if (response.status === 200 && row?.material_id === materialId && matches(row.composition) && Number.isFinite(row.energy_above_hull) && row.energy_above_hull >= 0) {
             hull = row.energy_above_hull; formation = Number.isFinite(row.formation_energy_per_atom) ? row.formation_energy_per_atom : null;
           }
-        } catch { /* The interactive demo remains available without a database connection. */ }
+        } catch { /* Missing real stability remains unknown; it never becomes a seeded demonstration value. */ }
       }
-      res.json({ ...demoPreflight(composition, Number(temperature), atmosphere, hull), formationEnergy: formation });
+      res.json(hull === undefined ? unavailable(formation) : { ...demoPreflight(composition, Number(temperature), atmosphere, hull), formationEnergy: formation });
     } catch { res.status(400).json({ error: "预审参数无效" }); }
   });
   for (const operation of ["xrd", "compare", "demo"]) router.post(`/${operation}`, async (req, res) => {

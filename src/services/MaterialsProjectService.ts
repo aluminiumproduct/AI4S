@@ -4,10 +4,12 @@ export interface MPData {
   material_id: string;
   formula_pretty: string;
   elements: string[];
-  composition: Record<string, any>;
+  composition: Record<string, number>;
   band_gap: number;
   formation_energy_per_atom: number;
-  structure: any;
+  energy_above_hull?: number | null;
+  structure?: unknown;
+  symmetry?: unknown;
 }
 
 export class MaterialsProjectService {
@@ -28,7 +30,7 @@ export class MaterialsProjectService {
         params: {
           elements: "Li,O",
           _limit: limit,
-          _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,structure",
+          _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom,energy_above_hull,structure",
         },
       });
 

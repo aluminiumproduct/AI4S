@@ -37,20 +37,29 @@ import MaterialsAdvisor, { type AdvisorRequest } from "./components/MaterialsAdv
 import { advisorCandidates, type AdvisorAction } from "./services/AdvisorContext";
 
 import StructurePanel from "./components/StructurePanel";
-import type { MaterialStructureRequest } from "./structures/materialStructure";
+import { canViewMaterialStructure, type MaterialStructureRequest } from "./structures/materialStructure";
+
+const UmlipPanel = React.lazy(() => import("./components/UmlipPanel"));
 import { CompositionDescriptorPanel } from "./components/CompositionDescriptorPanel";
 import { hashString } from "./engine/SeededRandom";
+import DataHubPanel from "./components/DataHubPanel";
+import { DEFAULT_HUB_QUERY, OBJECTIVES, sourceLabel, type HubMetadata, type HubQuery, type ObjectiveDirection } from "./dataHub";
+import { useDistillation } from "./engine/distillation/useDistillation";
+import { DescriptorMap, DistillationPanel } from "./components/DistillationPanel";
+import ParetoExplorer from "./components/ParetoExplorer";
 import type { CrystalStructure } from "./structures/types";
 import type { LabRequest, SynthesisFeedback } from "./synthesis/types";
-import { applySynthesisFeedback, loadFeedbackRegistry, restoreFeedback, saveFeedbackRegistry } from "./synthesis/feedback";
+import { applySynthesisFeedback, canApplySynthesisFeedback, feedbackLabel, loadFeedbackRegistry, restoreFeedback, saveFeedbackRegistry } from "./synthesis/feedback";
 import { isStrontiumTitanate } from "./synthesis/client";
+import { materialRecordKey } from "./materialContext";
+import { materialForStructure } from "./synthesis/reference";
 
 const SynthesisLab = React.lazy(() => import("./components/SynthesisLab"));
 
 const engine = new MaterialsEngine();
 
-function initialState(budget: number): ALState {
-  return { iteration: 0, budget, sampledCount: 0, bestValue: -Infinity, history: [] };
+function initialState(budget: number, direction: ObjectiveDirection = "max"): ALState {
+  return { iteration: 0, budget, sampledCount: 0, bestValue: direction === "min" ? Infinity : -Infinity, history: [] };
 }
 
 const translations = {
@@ -88,7 +97,7 @@ const translations = {
     iter: "Iter",
     methodologyDesc: "Choose an RBF Gaussian process, tree ensembles, kNN or a linear baseline. Models train on sampled labels in a background Worker. GP posterior standard deviation and ensemble disagreement have different meanings; neither guarantees convergence or accuracy on new materials.",
     representationDesc: "A shared 22-dimensional composition representation uses offline element constants: weighted means, population variances, ranges and coverage for five properties, plus a conditional ABO3 tolerance factor and validity flag. Identical compositions have identical descriptors; crystal polymorphs require additional structural data.",
-    objectiveDesc: "Real Materials Project records use database band gaps. Mock records use a labelled deterministic synthetic score; it is not a material band gap or a DFT result.",
+    objectiveDesc: "Choose the objective and its explicit units/direction in Data Hub. Sources, methods and observation conditions remain traceable.",
     langToggle: "中文",
     docs: "Documentation",
     docsTitle: "System Documentation & Technical Specifications",
@@ -132,8 +141,8 @@ const translations = {
     pending: "待定",
     iter: "轮次",
     methodologyDesc: "可选择 RBF 高斯过程、树集成、kNN 或线性基线，在后台 Worker 中使用已采样标签训练。GP 后验标准差与集成预测分歧含义不同；模型切换不保证全局收敛或对新材料的预测精度。",
-    representationDesc: "真实与Mock共用22维组成表示：5类元素属性的加权均值、总体方差、极差与覆盖率，加上有条件的ABO₃容忍因子和有效位。相同组成具有相同描述符；区分同质异构体仍需真实结构数据。",
-    objectiveDesc: "真实Materials Project记录以数据库带隙为目标。Mock使用明确标记的确定性合成分数，不是材料带隙或DFT结果。",
+    representationDesc: "所有数据源共用22维组成表示：5类元素属性的加权均值、总体方差、极差与覆盖率，加上有条件的ABO₃容忍因子和有效位。相同组成具有相同描述符；区分同质异构体仍需真实结构数据。",
+    objectiveDesc: "通过Data Hub选择目标、单位与优化方向；来源、方法、条件和数据版本均保持可追溯。",
     langToggle: "English",
     docs: "系统文档",
     docsTitle: "系统文档与技术规范",
@@ -147,6 +156,9 @@ const translations = {
 };
 
 export default function App() {
+  const [showUmlip, setShowUmlip] = useState(false);
+  const [hasOpenedUmlip, setHasOpenedUmlip] = useState(false);
+  const openUmlip = () => { setHasOpenedUmlip(true); setShowUmlip(true); };
   const [lang, setLang] = useState<"en" | "zh">("zh");
   const t = translations[lang];
 
@@ -163,7 +175,9 @@ export default function App() {
   // Dynamic Configs
   const [batchSize, setBatchSize] = useState(AL_CONFIG.BATCH_SIZE);
   const [totalBudget, setTotalBudget] = useState(AL_CONFIG.TOTAL_BUDGET);
-  const [searchSpaceSize, setSearchSpaceSize] = useState(400);
+  const [hubQuery, setHubQuery] = useState<HubQuery>({ ...DEFAULT_HUB_QUERY });
+  const [hubMetadata, setHubMetadata] = useState<HubMetadata | null>(null);
+  const objectiveSpec = OBJECTIVES[hubMetadata?.objective ?? hubQuery.objective];
   const [modelSettings, setModelSettings] = useState<ModelConfig>({ ...DEFAULT_MODEL_CONFIG });
   const [modelDiagnostics, setModelDiagnostics] = useState<ModelDiagnostics | undefined>();
 
@@ -187,14 +201,15 @@ export default function App() {
   const structureRequestId = useRef(0);
   const openStructure = () => { setStructureMaterial(null); setHasOpenedStructure(true); setShowStructure(true); };
   const openMaterialStructure = (material: Material) => {
-    setStructureMaterial({ id: material.id, formula: material.formula, source: material.source, requestId: ++structureRequestId.current });
+    setStructureMaterial({ id: material.id, formula: material.formula, source: material.source, structureRef: material.structureRef, requestId: ++structureRequestId.current });
     setHasOpenedStructure(true); setShowStructure(true);
   };
   const openSynthesisLab = (material?: Material, structure?: CrystalStructure) => {
-    const chosen = material || (structure ? pool.find(m => m.id === structure.source.materialId)
+    const chosen = material || (structure ? materialForStructure(pool, structure)
       : pool.find(m => isStrontiumTitanate(m.composition)) || advisorCandidates(pool)[0] || pool[0]);
     setLabRequest({ requestId: ++labSerial.current, materialId: chosen?.id, formula: chosen?.formula,
-      composition: chosen?.composition, source: chosen?.source, structure });
+      composition: chosen?.composition, source: chosen?.source, recordKey: chosen ? materialRecordKey(chosen) : undefined,
+      structureRef: chosen?.structureRef, structure });
     setShowStructure(false); setShowLab(true);
   };
   const [theme, setTheme] = useState<'classic' | 'science'>('classic');
@@ -206,6 +221,9 @@ export default function App() {
   const modelClient = useRef<ModelWorkerClient | null>(null);
   const activeRun = useRef<AbortController | null>(null);
   const stopReason = getStopReason(pool, totalBudget);
+  const [formulaMap, setFormulaMap] = useState(false);
+  const distillation = useDistillation({ pool, runId: advisorRunId, iteration: state.iteration,
+    isRealData, objective: hubMetadata?.objective ?? hubQuery.objective, modelConfig: modelSettings, isRunning: isAutoRunning, loading: isLoadingData });
 
   const cancelComputation = () => {
     runVersion.current++;
@@ -215,17 +233,21 @@ export default function App() {
     setIsIterating(false);
   };
   const acceptSynthesisFeedback = (feedback: SynthesisFeedback) => {
+    if (!feedback.recordKey || !pool.some(material => canApplySynthesisFeedback(material, feedback))) return false;
     cancelComputation(); setIsAutoRunning(false);
-    const registry = { ...synthesisFeedbackRef.current, [feedback.materialId]: feedback };
+    const registry = { ...synthesisFeedbackRef.current, [feedback.recordKey]: feedback };
     synthesisFeedbackRef.current = registry;
     setSynthesisFeedbacks(registry); saveFeedbackRegistry(registry);
     setPool(current => applySynthesisFeedback(current, feedback));
+    return true;
   };
   const labPanel = labRequest && <React.Suspense fallback={showLab ? <p role="status" className="fixed bottom-4 left-4 z-50 bg-white p-3 rounded shadow">正在打开合成与 XRD 实验室…</p> : null}>
     <SynthesisLab open={showLab} onClose={() => setShowLab(false)} request={labRequest} materials={pool} onFeedback={acceptSynthesisFeedback} />
   </React.Suspense>;
 
-  const loadData = async (size: number) => {
+  const loadData = async (query: HubQuery) => {
+    setShowLab(false); setLabRequest(null);
+    setHubQuery(query);
     setAdvisorRunId(value => value + 1);
     const request = ++loadRequest.current;
     cancelComputation();
@@ -235,20 +257,23 @@ export default function App() {
     setDataIssue(null);
     setIsLoadingData(true);
     try {
-      const success = await engine.loadRealData(size);
+      const metadata = await engine.loadHubData(query);
       if (request !== loadRequest.current) return;
+      if (!metadata) return;
       setPool(restoreFeedback(engine.getPool(), synthesisFeedbackRef.current));
-      setIsRealData(success);
+      setHubMetadata(metadata);
+      setIsRealData(true);
       setDataIssue(engine.getLoadIssue());
-      setState(initialState(totalBudget));
+      setState(initialState(totalBudget, OBJECTIVES[metadata.objective].direction));
       setIsLoaded(true);
-    } catch {
+    } catch (error) {
       if (request !== loadRequest.current) return;
       setPool([]);
-      setState(initialState(totalBudget));
+      setHubMetadata(null);
+      setState(initialState(totalBudget, OBJECTIVES[query.objective].direction));
       setIsRealData(false);
       setDataIssue("NETWORK_ERROR");
-      setRunError(lang === "zh" ? "数据加载失败，请重试。" : "Data loading failed. Please retry.");
+      setRunError(error instanceof Error ? error.message : "Data Hub load failed.");
       setIsLoaded(true);
     } finally {
       if (request === loadRequest.current) setIsLoadingData(false);
@@ -256,7 +281,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    void loadData(searchSpaceSize);
+    void loadData(hubQuery);
     return () => {
       loadRequest.current++;
       runVersion.current++;
@@ -266,16 +291,6 @@ export default function App() {
       engine.cancelLoad();
     };
   }, []);
-
-  // Performance-optimized chart data (downsampling for large datasets)
-  const chartData = useMemo(() => {
-    const available = pool.filter(m => Number.isFinite(m.descriptors?.statistics.electronegativityPauling.mean)
-      && Number.isFinite(m.descriptors?.statistics.covalentRadiusAngstrom.mean));
-    if (available.length <= 2000) return available;
-    const sampled = available.filter(m => m.isSampled);
-    const unsampled = available.filter(m => !m.isSampled).sort((a, b) => hashString(a.id) - hashString(b.id));
-    return [...sampled, ...unsampled.slice(0, Math.max(0, 2000 - sampled.length))];
-  }, [pool]);
 
   const runIteration = async () => {
     if (iterationInFlight.current || isLoadingData) return;
@@ -287,7 +302,7 @@ export default function App() {
     try {
       if (!modelClient.current) modelClient.current = new ModelWorkerClient(modelSettings);
       const result = await runActiveLearningStep(pool, state, {
-        totalBudget, batchSize, strategy, signal: controller.signal, random: seededRandom(modelSettings.seed),
+        totalBudget, batchSize, strategy, direction: objectiveSpec.direction, signal: controller.signal, random: seededRandom(modelSettings.seed),
       }, modelClient.current);
       if (version !== runVersion.current) return;
       setPool(result.pool);
@@ -324,7 +339,7 @@ export default function App() {
     }));
     
     setPool(resetPool);
-    setState(initialState(totalBudget));
+    setState(initialState(totalBudget, objectiveSpec.direction));
     setIsAutoRunning(false);
   };
 
@@ -345,12 +360,14 @@ export default function App() {
       <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-[#141414] border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-bold uppercase tracking-widest opacity-60">正在初始化 AMI-AL 高通量实验环境并对接 Materials Project 数据库...</p>
+          <p className="text-sm font-bold uppercase tracking-widest opacity-60">正在加载 Data Hub 数据目录…</p>
           <button type="button" onClick={openStructure} className="px-4 py-2 border rounded-lg">
             {lang === "zh" ? "先导入结构 / 3D 查看" : "Import structure / 3D viewer"}
           </button>
+          <button type="button" onClick={openUmlip} className="block mx-auto mt-3 px-4 py-2 border rounded-lg">uMLIP 同成分构型计算</button>
         </div>
         {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} onOpenLab={structure => openSynthesisLab(undefined, structure)} /></React.Fragment>}
+        {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
         {labPanel}
       </div>
     );
@@ -369,6 +386,13 @@ export default function App() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={openUmlip} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#486c51] bg-[#e6edde] text-[#34523d] text-xs font-bold">
+            <Cpu size={14} /> {lang === "zh" ? "uMLIP 构型寻优" : "uMLIP configuration search"}
+          </button>
+          <button type="button" onClick={() => document.getElementById("distillation-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#a7bc95] bg-[#eaf2e2] text-[#456c44] text-xs font-bold">
+            <Sparkles size={14} /> {lang === "zh" ? "白盒公式" : "White-box formulas"}
+          </button>
           <button type="button" onClick={() => openSynthesisLab()} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#66928b] bg-[#e9f4ef] text-[#2c6b59] text-xs font-bold">
             <Beaker size={14} />{lang === "zh" ? "合成预审 · XRD" : "Synthesis · XRD"}
           </button>
@@ -422,7 +446,7 @@ export default function App() {
         </div>
       </header>
 
-      {!isLoadingData && (runError || stopReason) && (
+      {isLoaded && !isLoadingData && (runError || stopReason) && (
         <p role={runError ? "alert" : "status"} className="max-w-7xl mx-auto mb-6 p-3 rounded-lg bg-amber-50 text-amber-900">
           {runError || (stopReason === "empty-pool"
             ? (lang === "zh" ? "没有候选材料，请同步数据后再运行。" : "No candidate materials. Sync data before running.")
@@ -432,60 +456,13 @@ export default function App() {
         </p>
       )}
 
-      <main className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
-        {/* Sidebar: Config & Stats */}
-        <div className="col-span-3 space-y-6">
-          <section className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl shadow-sm border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'}`}>
-            <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
-              <Database size={14} /> 数据概况
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] uppercase font-bold opacity-60">数据源</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isRealData ? (theme === 'classic' ? 'bg-blue-100 text-blue-700' : 'bg-blue-600 text-white') : 'bg-orange-100 text-orange-700'}`}>
-                  {isRealData ? 'Materials Project' : '模拟数据 (Mock)'}
-                </span>
-              </div>
-              {dataIssue && !isLoadingData && (
-                <p role="status" className="text-xs leading-relaxed text-amber-800 bg-amber-50 p-2 rounded-lg">
-                  {networkMessage(dataIssue, lang)} {lang === "zh" ? "当前使用模拟数据，恢复连接后可同步重试。" : "Using mock data. Sync again after the connection is restored."}
-                </p>
-              )}
-              
-              <div>
-                <div className="flex justify-between">
-                  <label className="text-[10px] uppercase font-bold opacity-60">搜索空间规模</label>
-                  <span className="text-[10px] font-mono font-bold">{searchSpaceSize}</span>
-                </div>
-                <input 
-                  type="range" min="100" max="10000" step="100"
-                  value={searchSpaceSize}
-                  onChange={(e) => setSearchSpaceSize(parseInt(e.target.value))}
-                  disabled={state.iteration > 0 || isLoadingData || isIterating}
-                  className={`w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer ${theme === 'classic' ? 'accent-[#141414]' : 'accent-[#2B6CB0]'} mt-2`}
-                />
-                <button 
-                  onClick={() => loadData(searchSpaceSize)}
-                  disabled={state.iteration > 0 || isLoadingData || isIterating}
-                  className={`w-full mt-3 py-1.5 border ${theme === 'classic' ? 'border-[#141414] hover:bg-[#141414] hover:text-white' : 'border-[#2B6CB0] text-[#2B6CB0] hover:bg-[#2B6CB0] hover:text-white'} text-[10px] font-bold uppercase tracking-tighter transition-all disabled:opacity-20`}
-                >
-                  {isLoadingData ? '正在同步...' : '同步数据 (Sync Data)'}
-                </button>
-              </div>
+      <ParetoExplorer materials={pool} lang={lang} />
 
-              <div className="pt-2 border-t border-gray-100 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold opacity-60">特征维度</span>
-                  <span className="text-sm font-mono font-bold">{pool[0]?.features.length || 0}</span>
-                </div>
-                {pool.length > 2000 && (
-                  <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase">
-                    <Zap size={10} /> {t.perfMode}
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Sidebar: Config & Stats */}
+        <div className="lg:col-span-3 min-w-0 space-y-6">
+          <DataHubPanel query={hubQuery} metadata={hubMetadata} count={pool.length} loading={isLoadingData}
+            lang={lang} onChange={setHubQuery} onLoad={query => void loadData(query)} />
 
           <section className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl shadow-sm border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'}`}>
             <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
@@ -574,17 +551,19 @@ export default function App() {
               <div>
                 <p className="text-[10px] uppercase font-bold opacity-40">{t.bestConductivity}</p>
                 <p className={`text-3xl font-serif italic ${theme === 'classic' ? 'text-emerald-400' : 'text-teal-300'}`}>
-                  {state.bestValue === -Infinity ? "N/A" : state.bestValue.toFixed(4)}
+                  {!Number.isFinite(state.bestValue) ? "N/A" : state.bestValue.toFixed(4)}
                 </p>
+                <p className="mt-2 text-xs opacity-60">{objectiveSpec[lang]} / {objectiveSpec.unit} · {objectiveSpec.direction === "min" ? "↓ min" : "↑ max"}</p>
               </div>
             </div>
           </section>
         </div>
 
         {/* Main Content: Visualization */}
-        <div className="col-span-9 space-y-8">
+        <div id="distillation-workspace" className="lg:col-span-9 min-w-0 space-y-8">
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal-100 bg-teal-50 p-4"><div><p className="text-[10px] font-bold tracking-widest text-teal-700">{sourceLabel(hubMetadata?.effectiveSource ?? hubQuery.source, lang)} · {pool.length} {lang === "zh" ? "条记录" : "records"}</p><h2 className="mt-1 text-lg font-semibold text-teal-950">{objectiveSpec[lang]} <span className="text-sm font-normal">/ {objectiveSpec.unit}</span></h2></div><span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-teal-800">{objectiveSpec.direction === "min" ? "↓ Minimize" : "↑ Maximize"}</span></section>
           {/* Charts Row */}
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'} h-[350px]`}>
               <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>{t.regretCurve}</h3>
               <ResponsiveContainer width="100%" height="90%">
@@ -608,55 +587,13 @@ export default function App() {
               </ResponsiveContainer>
             </div>
 
-            <div className={`${theme === 'classic' ? 'bg-white' : 'bg-white/80'} p-6 rounded-3xl border ${theme === 'classic' ? 'border-[#141414]/5' : 'border-[#2B6CB0]/10'} h-[350px]`}>
-              <h3 className={`text-xs font-bold uppercase tracking-widest opacity-40 mb-4 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>{t.similarityMap}</h3>
-              <ResponsiveContainer width="100%" height="90%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'classic' ? "#14141410" : "#2B6CB010"} />
-                  <XAxis type="number" dataKey="descriptors.statistics.electronegativityPauling.mean" name="χ mean" tick={{ fontSize: 10 }} />
-                  <YAxis type="number" dataKey="descriptors.statistics.covalentRadiusAngstrom.mean" name="Covalent radius mean" unit=" Å" tick={{ fontSize: 10 }} />
-                  <Tooltip 
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload as Material;
-                        return (
-                          <div className={`${theme === 'classic' ? 'bg-[#141414] text-white' : 'bg-[#1A365D] text-white'} p-4 rounded-2xl shadow-2xl border-none text-[10px] space-y-1 backdrop-blur-md bg-opacity-90`}>
-                            <p className="font-bold uppercase tracking-widest opacity-50 mb-2">{data.formula}</p>
-                            <p>Cost: <span className="font-mono text-blue-300">{data.cost.toFixed(2)} units</span></p>
-                            <p>{data.targetKind === "synthetic-score" ? "Synthetic score" : "Band gap"}: <span className="font-mono text-emerald-400">{data.trueProperty.toFixed(3)}{data.targetKind === "band-gap" ? " eV" : ""}</span></p>
-                            <p className="pt-1 opacity-50 italic">χ mean / covalent-radius mean (Å)</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Scatter 
-                    name="Unsampled" 
-                    data={chartData.filter(m => !m.isSampled)} 
-                    fill={theme === 'classic' ? "#141414" : "#2B6CB0"} 
-                    fillOpacity={0.05} 
-                  />
-                  <Scatter 
-                    name="Sampled" 
-                    data={chartData.filter(m => m.isSampled)} 
-                    fill={theme === 'classic' ? "#10B981" : "#38B2AC"} 
-                  >
-                    {chartData.filter(m => m.isSampled).map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.trueProperty === state.bestValue ? (theme === 'classic' ? "#F59E0B" : "#F6AD55") : (theme === 'classic' ? "#10B981" : "#38B2AC")} 
-                        stroke="#fff" 
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
+            <DescriptorMap key={advisorRunId} pool={pool} result={distillation.result} lang={lang}
+              enabled={formulaMap} onToggle={() => setFormulaMap(value => !value)} objective={hubMetadata?.objective ?? hubQuery.objective} />
           </div>
 
-          {pool.some(m => m.synthesisFeedback) && <div className="synthesis-feedback-banner"><span><b>实验反馈已接入</b> · {pool.filter(m => m.synthesisFeedback).length} 个候选已更新合成先验，下一轮将使用新的约束排序。</span><button type="button" onClick={() => openSynthesisLab()}>查看实验记录 ↗</button></div>}
+          <DistillationPanel controller={distillation} lang={lang} />
+
+          {pool.some(m => m.synthesisFeedback) && <div className="synthesis-feedback-banner"><span><b>谱图匹配反馈已接入</b> · {pool.filter(m => m.synthesisFeedback).length} 个候选已更新合成先验，下一轮将使用新的约束排序。</span><button type="button" onClick={() => openSynthesisLab()}>查看实验记录 ↗</button></div>}
           <section className="rounded-3xl border border-[#d6dfce] bg-[#f5f6ec] p-5" aria-label={lang === "zh" ? "AI 优先候选" : "AI candidate shortlist"}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div><h3 className="flex items-center gap-2 text-sm font-semibold text-[#35523c]"><Sparkles size={16} />{lang === "zh" ? "让推荐走向研究方案" : "From ranking to a research plan"}</h3><p className="text-[10px] text-[#7b8971] mt-1">{lang === "zh" ? `第 ${state.iteration} 轮 · 最近一次预测的 Top-3 · 下一轮重训可能改变排序` : `Round ${state.iteration} · Top 3 from the last prediction pass · Retraining may change the order`}</p></div>
@@ -665,7 +602,7 @@ export default function App() {
             {topAdvisorCandidates.length ? <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{topAdvisorCandidates.map((m, index) => <div key={m.id} className="bg-white/85 rounded-xl border border-[#e0e5d7] p-4">
               <div className="flex justify-between items-start gap-2"><span className="font-serif text-lg italic">{m.formula}</span><span className="text-[10px] text-[#9a8a50]">0{index + 1}</span></div>
               <p className="text-[9px] text-[#8d9782] font-mono truncate mt-1">{m.id}</p>
-              {m.synthesisFeedback && <span className={`synthesis-candidate-status ${m.synthesisFeedback.status}`}>{m.synthesisFeedback.status === "pass" ? "✓ XRD 验证通过" : "! 存在杂相"} · 先验 {m.synthesisFeedback.prior.toFixed(2)}</span>}
+              {m.synthesisFeedback && <span className={`synthesis-candidate-status ${m.synthesisFeedback.status}`}>{feedbackLabel(m.synthesisFeedback)} · 先验 {m.synthesisFeedback.prior.toFixed(2)}</span>}
               <div className="text-[10px] flex flex-wrap gap-x-3 gap-y-1 text-[#5e7157] font-mono my-3"><span>µ {m.predictedMean?.toFixed(3)}</span><span>σ {m.predictedStd?.toFixed(3)}</span><span>{lang === "zh" ? "成本" : "Cost"} {m.cost.toFixed(2)}</span></div>
               <div className="flex flex-wrap gap-2"><button type="button" onClick={() => openSynthesisLab(m)} className="synthesis-entry">⚗ {lang === "zh" ? "合成 / XRD" : "Synthesis / XRD"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "mechanism")} className="text-[10px] text-[#7a6230] px-2 py-1.5 rounded-md bg-[#f5efdc] disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={() => openAdvisor(m.id, "dft")} className="text-[10px] text-[#41644b] px-2 py-1.5 rounded-md bg-[#ecf2e7] disabled:opacity-40">{lang === "zh" ? "DFT 方案" : "DFT plan"}</button></div>
             </div>)}</div> : <p className="text-xs leading-relaxed text-[#829077]">{lang === "zh" ? "运行一轮主动学习后，这里会展示可解析的候选。也可以打开顾问，先讨论当前材料与研究目标。" : "Run a learning step to populate this shortlist, or open the advisor to discuss your materials and research objective."}</p>}
@@ -695,14 +632,14 @@ export default function App() {
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.uncertainty}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.acquisition}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{t.trueValue}</th>
-                    <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "合成验证" : "Synthesis"}</th>
+                    <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "谱图匹配反馈" : "Synthesis"}</th>
                     <th className="p-4 text-[10px] uppercase font-bold opacity-40">{lang === "zh" ? "AI 顾问" : "AI Advisor"}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <AnimatePresence mode="popLayout">
                     {pool
-                      .filter(m => m.isSampled || (m.acquisitionValue && m.acquisitionValue > 0))
+                      .filter(m => m.isSampled || Number.isFinite(m.acquisitionValue))
                       .sort((a, b) => {
                         if (a.isSampled && !b.isSampled) return -1;
                         if (!a.isSampled && b.isSampled) return 1;
@@ -724,8 +661,10 @@ export default function App() {
                             <button type="button" onClick={event => { event.stopPropagation(); openMaterialStructure(m); }}
                               className="text-left hover:underline focus-visible:outline-2 focus-visible:outline-teal-600"
                               aria-label={lang === "zh" ? `查看 ${m.formula}（${m.id}）的结构` : `View structure of ${m.formula} (${m.id})`}>
-                              {m.formula}<span className="ml-2 text-[10px] font-sans not-italic text-teal-700">{m.source === "materials-project" ? (lang === "zh" ? "查看 3D" : "View 3D") : (lang === "zh" ? "暂无结构" : "No structure")}</span>
+                              {m.formula}<span className="ml-2 text-[10px] font-sans not-italic text-teal-700">{canViewMaterialStructure(m) ? (lang === "zh" ? "查看 3D" : "View 3D") : (lang === "zh" ? "暂无结构" : "No structure")}</span>
                             </button>
+                            <p className="mt-1 text-[9px] font-sans not-italic text-slate-500" title={m.methodMeta}>{sourceLabel(m.source, lang)} · {m.fidelity ?? "—"}</p>
+                            {m.provenance && <a href={m.provenance.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[9px] font-sans not-italic text-teal-700 underline" title={`${m.provenance.reference} · ${m.provenance.datasetVersion}`}>{lang === "zh" ? "来源 / 方法" : "Provenance"}</a>}
                             {m.isSampled && (
                               <span className={`ml-2 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${theme === 'classic' ? 'bg-emerald-100 text-emerald-700' : 'bg-teal-100 text-teal-700'}`}>
                                 Iter {m.iteration}
@@ -740,16 +679,16 @@ export default function App() {
                               <div className={`w-12 ${theme === 'classic' ? 'bg-gray-100' : 'bg-blue-100'} h-1.5 rounded-full overflow-hidden`}>
                                 <div 
                                   className={`${theme === 'classic' ? 'bg-[#141414]' : 'bg-[#2B6CB0]'} h-full`} 
-                                  style={{ width: `${Math.min(100, (m.acquisitionValue || 0) * 20)}%` }} 
+                                  style={{ width: `${Number.isFinite(m.acquisitionValue) ? 100 / (1 + Math.exp(-Math.max(-30, Math.min(30, m.acquisitionValue!)))) : 0}%` }}
                                 />
                               </div>
                               <span className="font-mono text-[10px]">{m.acquisitionValue?.toFixed(2) || "0.00"}</span>
                             </div>
                           </td>
                           <td className="p-4 font-mono text-xs font-bold">
-                            {m.isSampled ? m.trueProperty.toFixed(4) : "???"}
+                            {m.isSampled ? `${m.trueProperty.toFixed(4)} ${objectiveSpec.unit}` : "???"}
                           </td>
-                          <td className="p-3 text-[10px]"><button type="button" onClick={event => { event.stopPropagation(); openSynthesisLab(m); }} className="synthesis-entry">{m.synthesisFeedback ? (m.synthesisFeedback.status === "pass" ? "✓ 已验证" : "! 杂相预警") : "合成 / XRD"}</button></td>
+                          <td className="p-3 text-[10px]"><button type="button" onClick={event => { event.stopPropagation(); openSynthesisLab(m); }} className="synthesis-entry">{m.synthesisFeedback ? (feedbackLabel(m.synthesisFeedback)) : "合成 / XRD"}</button></td>
                           <td className="p-3 text-[10px] min-w-28"><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id, "mechanism"); }} className="block text-[#8b6d29] hover:underline disabled:opacity-40">✨ {lang === "zh" ? "AI 机理解析" : "Explain selection"}</button><button type="button" disabled={isLoadingData || isIterating} onClick={event => { event.stopPropagation(); openAdvisor(m.id); }} className="block mt-2 text-[#51774e] hover:underline disabled:opacity-40">{lang === "zh" ? "合成 / 计算方案" : "Research plan"}</button></td>
                         </motion.tr>
                       ))}
@@ -762,12 +701,12 @@ export default function App() {
       </main>
 
       <button type="button" onClick={() => openAdvisor()} className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-[#1e5542] text-[#f8f4df] border border-[#b9ac73] shadow-xl text-xs font-semibold" aria-label={lang === "zh" ? "打开 AI 首席材料顾问" : "Open AI materials advisor"}><Sparkles size={17} />{lang === "zh" ? "问问材料顾问" : "Ask the advisor"}</button>
-      <MaterialsAdvisor open={showAdvisor} onClose={() => setShowAdvisor(false)} input={{ pool, state, strategy, batchSize, totalBudget, isRealData, runId: advisorRunId, modelConfig: modelSettings }} lang={lang} loading={isLoadingData || isIterating} request={advisorRequest} />
+      <MaterialsAdvisor open={showAdvisor} onClose={() => setShowAdvisor(false)} input={{ pool, state, strategy, batchSize, totalBudget, isRealData, runId: advisorRunId, modelConfig: modelSettings, hubMetadata, hubQuery: hubMetadata?.query ?? hubQuery, hubLoadState: isLoadingData ? "loading" : runError && !hubMetadata ? "error" : "ready" }} lang={lang} loading={isLoadingData || isIterating} request={advisorRequest} />
       <CompositionDescriptorPanel key={`${isRealData}:${pool[0]?.id ?? "empty"}`} materials={pool} lang={lang} />
       {labPanel}
 
       {/* Research Methodology Modal / Info */}
-      <footer className={`max-w-7xl mx-auto mt-12 grid grid-cols-3 gap-8 border-t ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pt-8 pb-12`}>
+      <footer className={`max-w-7xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 border-t ${theme === 'classic' ? 'border-[#141414]/10' : 'border-[#2B6CB0]/20'} pt-8 pb-12`}>
         <div className="space-y-2">
           <h4 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${theme === 'science' ? 'text-[#2B6CB0]' : ''}`}>
             <Beaker size={14} /> {t.methodology}
@@ -789,7 +728,7 @@ export default function App() {
             <Zap size={14} /> {t.objective}
           </h4>
           <p className="text-xs opacity-60 leading-relaxed">
-            {t.objectiveDesc}
+            {objectiveSpec[lang]} / {objectiveSpec.unit} · {objectiveSpec.direction === "min" ? (lang === "zh" ? "最小化" : "Minimize") : (lang === "zh" ? "最大化" : "Maximize")}。{lang === "zh" ? "目标值按来源、方法与条件保留；本轮采用已有观测的离线回放。" : "Targets retain source, method and conditions; this run replays existing observations."}
           </p>
         </div>
       </footer>
@@ -838,7 +777,7 @@ export default function App() {
                       <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-600">02. Mathematical Logic & BO Loop</h3>
                       <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
                         <p className="text-xs font-mono opacity-80">
-                          Objective: argmax f(x), where f(x) is the target property (e.g., Band Gap).
+                          Objective: {objectiveSpec.direction === "min" ? "argmin" : "argmax"} f(x), {objectiveSpec.en} / {objectiveSpec.unit}.
                         </p>
                         <p className="text-xs leading-relaxed opacity-70">
                           The system follows a rigorous 4-step cycle:
@@ -906,7 +845,7 @@ export default function App() {
                       <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-600">02. 数学逻辑与 BO 闭环</h3>
                       <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
                         <p className="text-xs font-mono opacity-80">
-                          目标函数: argmax f(x), 其中 f(x) 为目标性质（如带隙）。
+                          目标函数: {objectiveSpec.direction === "min" ? "argmin" : "argmax"} f(x)，{objectiveSpec.zh} / {objectiveSpec.unit}。
                         </p>
                         <p className="text-xs leading-relaxed opacity-70">
                           系统遵循严密的 4 步循环逻辑：
@@ -1023,6 +962,7 @@ export default function App() {
         )}
       </AnimatePresence>
       {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} onOpenLab={structure => openSynthesisLab(undefined, structure)} /></React.Fragment>}
+      {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
     </div>
   );
 }

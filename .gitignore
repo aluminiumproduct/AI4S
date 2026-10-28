@@ -6,5 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+/data/*.db
+/data/*.db-*
+/data/*.sqlite*
+umlip-results/
+.venv-umlip/
 .venv/
 __pycache__/

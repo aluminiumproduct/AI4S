@@ -30,8 +30,13 @@ export function parseExperimentalSpectrum(text: string): XrdPoint[] {
   return points;
 }
 
-export function spectrumText(points: XrdPoint[]): string {
-  return "# 2theta(deg) intensity\n" + points.map(p => `${p.twoTheta.toFixed(4)}\t${p.intensity.toFixed(5)}`).join("\n");
+export function spectrumText(points: XrdPoint[], demo = false): string {
+  return `# AI4S_EVIDENCE: ${demo ? "demonstration" : "user-uploaded-unverified"}\n# 2theta(deg) intensity\n`
+    + points.map(p => `${p.twoTheta.toFixed(4)}\t${p.intensity.toFixed(5)}`).join("\n");
+}
+export function spectrumIsDemonstration(text: string, filename = ""): boolean {
+  return /^\s*#\s*AI4S_EVIDENCE:\s*demonstration\s*$/im.test(text)
+    || /(?:demo|synthetic|演示)/i.test(filename);
 }
 
 export function compareSpectrum(result: XrdResult, points: XrdPoint[], signal?: AbortSignal) {

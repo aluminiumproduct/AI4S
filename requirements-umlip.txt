@@ -1,0 +1,5 @@
+# Tested with Python 3.11 on macOS arm64; the web app does not require these packages.
+ase==3.26.0
+numpy==1.26.4
+torch==2.8.0
+mace-torch==0.3.16

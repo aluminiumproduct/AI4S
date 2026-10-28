@@ -3,7 +3,8 @@ import StructureViewer, { elementColor } from "./StructureViewer";
 import { displayAtoms, latticeParameters, MAX_STRUCTURE_SITES, minimumImageDistance, norm, structureComposition, subtract } from "../structures/geometry";
 import { MAX_STRUCTURE_BYTES, type CrystalStructure } from "../structures/types";
 import { exampleCif, examplePoscar } from "../structures/examples";
-import type { MaterialStructureRequest } from "../structures/materialStructure";
+import { canViewMaterialStructure, type MaterialStructureRequest } from "../structures/materialStructure";
+import { sourceLabel } from "../dataHub";
 import { MaterialStructureService } from "../services/MaterialStructureService";
 import { networkIssueCode, networkMessage } from "../services/NetworkStatus";
 import "./structure.css";
@@ -122,7 +123,7 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
       <button type="button" className="structure-close" onClick={onClose} aria-label={t("关闭结构查看器", "Close structure viewer")}>×</button>
     </header>
     {materialMode ? <div className="structure-material-context" data-material-id={materialRequest.id}>
-      <div><b>{materialRequest.formula} · {materialRequest.id}</b><p>{materialRequest.source === "materials-project" ? "Materials Project" : materialRequest.source === "mock" ? "Mock" : t("来源未确认", "Unverified source")}
+      <div><b>{materialRequest.formula} · {materialRequest.id}</b><p>{sourceLabel(materialRequest.structureRef?.dataset ?? materialRequest.source, lang)}
         {currentRemote?.status === "ready" && ` · ${currentRemote.cached ? t("已缓存", "Cached") : t("已从数据库获取", "Fetched from database")}`}</p></div>
       {onImportMode && <button type="button" onClick={onImportMode}>{t("打开本地结构导入", "Open local import")}</button>}
     </div> : <div className="structure-importbar" onDragOver={event => event.preventDefault()} onDrop={event => {
@@ -150,18 +151,19 @@ export default function StructureWorkspace({ open, onClose, lang, materialReques
     {!materialMode && error && <p className="structure-feedback structure-error" role="alert">{error}{structure && <span> {t("保留上一份已成功导入的结构。", "The previous valid structure is retained.")}</span>}</p>}
     {materialMode && !structure && <div className="structure-empty" role={currentRemote?.status === "error" ? "alert" : "status"}>
       {!currentRemote || currentRemote.status === "loading" ? <><h3>{t("正在获取真实结构…", "Loading the database structure…")}</h3><p>{materialRequest.id}</p></>
-        : currentRemote.status === "missing" ? <><h3>{t("暂无结构", "No structure available")}</h3><p>{materialRequest.source === "mock" ? t("该记录为 Mock 模拟材料，没有真实晶格和原子坐标。", "This Mock material has no real lattice or atomic coordinates.") : materialRequest.source !== "materials-project" ? t("材料来源尚未确认，无法关联真实结构。", "The material source is unverified.") : t("数据库未提供该材料 ID 的结构。", "No structure was returned for this material ID.")}</p></>
+        : currentRemote.status === "missing" ? <><h3>{t("暂无结构", "No structure available")}</h3><p>{materialRequest.source === "mock" ? t("该记录为 Mock 模拟材料，没有真实晶格和原子坐标。", "This Mock material has no real lattice or atomic coordinates.") : !canViewMaterialStructure(materialRequest) ? t("材料来源尚未确认，无法关联真实结构。", "The material source is unverified.") : t("数据库未提供该材料 ID 的结构。", "No structure was returned for this material ID.")}</p></>
         : <><h3>{t("结构获取失败", "Could not load the structure")}</h3><p>{currentRemote.code === "INVALID_REQUEST" ? t("材料 ID 无效。", "Invalid material ID.") : networkMessage(networkIssueCode(currentRemote.code === "ECONNABORTED" ? "TIMEOUT" : currentRemote.code), lang)}</p></>}
-      {currentRemote && ["missing", "error"].includes(currentRemote.status) && materialRequest.source === "materials-project" && <button type="button" onClick={() => setRetry(value => value + 1)}>{t("重试获取结构", "Retry structure request")}</button>}
+      {currentRemote && ["missing", "error"].includes(currentRemote.status) && canViewMaterialStructure(materialRequest) && <button type="button" onClick={() => setRetry(value => value + 1)}>{t("重试获取结构", "Retry structure request")}</button>}
     </div>}
     {!structure ? !materialMode && <div className="structure-empty">
       <div className="structure-empty-cell" aria-hidden="true">◇</div><h3>{t("从真实晶胞开始", "Start with a crystal structure")}</h3>
       <p>{t("导入文件或加载一个演示结构，查看原子、晶胞和位点距离。", "Import a file or load an example to inspect atoms, the unit cell and site distances.")}</p>
       <p className="structure-muted">{t("文件在浏览器本地读取，不上传到材料数据库或大模型。", "Files are read locally in your browser, without uploading to a database or language model.")}</p>
     </div> : <>
-      <div className="structure-view-heading"><div><h3>{structure.name}</h3><p>{structure.source.filename} · {structure.source.format === "materials-project" ? "Materials Project" : structure.source.format.toUpperCase()}</p></div>
+      <div className="structure-view-heading"><div><h3>{structure.name}</h3><p>{structure.source.filename} · {structure.source.providerLabel ?? (structure.source.format === "materials-project" ? "Materials Project" : structure.source.format.toUpperCase())}</p></div>
         {!materialMode && structures.length > 1 && <label>{t("CIF 数据块", "CIF block")} <select value={activeIndex} onChange={event => { setRepeats(1); setActiveIndex(Number(event.target.value)); }}>{structures.map((item, i) => <option key={i} value={i}>{item.name}</option>)}</select></label>}
         <span className="structure-unlabelled">{materialMode ? t("数据库材料对应结构", "Structure linked by material ID") : t("未关联目标性质标签", "No target-property label")}</span></div>
+      {structure.source.provenance && <details className="structure-feedback"><summary>{t("结构来源与版本", "Structure provenance and version")}</summary><p>{structure.source.provenance.reference}</p><p>{structure.source.provenance.datasetVersion} · {structure.source.fetchedAt}</p><a href={structure.source.provenance.url} target="_blank" rel="noopener noreferrer">{structure.source.provenance.url}</a></details>}
       <div className="structure-view-layout">
         <div className="structure-visual-area"><div className="structure-controls">
           <label><input type="checkbox" checked={showCell} onChange={event => setShowCell(event.target.checked)} />{t("晶胞", "Cell")}</label>

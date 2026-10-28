@@ -3,6 +3,7 @@ import { AcquisitionFunction, type AcquisitionStrategy } from "./AcquisitionFunc
 import type { FeaturePoint } from "./SurrogateModel";
 import type { Prediction } from "./models/regressors";
 import { createSeededRandom } from "./SeededRandom";
+import { bestTarget, type ObjectiveDirection } from "../dataHub";
 
 export type StopReason = "empty-pool" | "budget-exhausted" | "candidates-exhausted";
 
@@ -19,6 +20,7 @@ export interface StepConfig {
   initialSamples?: number;
   random?: () => number;
   signal?: AbortSignal;
+  direction?: ObjectiveDirection;
 }
 
 export function getStopReason(pool: Material[], totalBudget: number): StopReason | null {
@@ -75,7 +77,8 @@ export async function runActiveLearningStep(
   const sampled = nextPool.filter(material => material.isSampled);
   await model.train(sampled);
   config.signal?.throwIfAborted();
-  const bestObserved = Math.max(...sampled.map(material => material.trueProperty));
+  const direction = config.direction ?? "max";
+  const bestObserved = bestTarget(sampled.map(material => material.trueProperty), direction);
   const scoreRandom = createSeededRandom(0x53434f52 + state.iteration);
   const candidatesToPredict = nextPool.filter(material => !material.isSampled);
   const predictions = model.predictBatch
@@ -91,7 +94,7 @@ export async function runActiveLearningStep(
     if (!Number.isFinite(mean) || !Number.isFinite(std) || std < 0) throw new Error("Invalid surrogate prediction");
     material.predictedMean = mean;
     material.predictedStd = std;
-    material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true, scoreRandom);
+    material.acquisitionValue = AcquisitionFunction.compute(material, config.strategy, bestObserved, 2, true, scoreRandom, direction);
   }
 
   if (!initializing) {
@@ -106,9 +109,9 @@ export async function runActiveLearningStep(
   }
 
   const updated = nextPool.filter(material => material.isSampled);
-  const bestValue = Math.max(...updated.map(material => material.trueProperty));
-  const globalMax = Math.max(...nextPool.map(material => material.trueProperty));
-  const regret = globalMax - bestValue;
+  const bestValue = bestTarget(updated.map(material => material.trueProperty), direction);
+  const globalBest = bestTarget(nextPool.map(material => material.trueProperty), direction);
+  const regret = direction === "min" ? bestValue - globalBest : globalBest - bestValue;
   const nextState: ALState = {
     ...state,
     iteration: state.iteration + 1,
