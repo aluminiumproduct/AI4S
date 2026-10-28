@@ -3,6 +3,10 @@ import OpenAI from "openai";
 import { NetworkFailure, httpFailure, networkFailure, type NetworkClient } from "./network";
 import { isMaterialId, normalizeMaterialStructure } from "../src/structures/materialStructure";
 import { StructureCache } from "../src/structures/StructureCache";
+import type { HubStore } from "./hubStore";
+import { HubInputError } from "./hubStore";
+import { createHubRouter } from "./hubRoutes";
+import { mpFilterParams, MP_FIELDS } from "./mpProvider";
 
 interface ApiDependencies {
   network: NetworkClient;
@@ -12,6 +16,7 @@ interface ApiDependencies {
   chatBaseURL?: string;
   materialsDeadlineMs?: number;
   chatDeadlineMs?: number;
+  hub?: HubStore;
 }
 
 function configuredKey(value: string | undefined) {
@@ -46,8 +51,9 @@ function sendFailure(res: Response, error: unknown, service: "materials" | "chat
   });
 }
 
-export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000 }: ApiDependencies) {
+export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000, hub }: ApiDependencies) {
   const app = express();
+  app.use("/api/hub", createHubRouter({ hub, network, env, materialsEndpoint, deadline: materialsDeadlineMs, requestScope }));
   app.use(express.json({ limit: "100kb" }));
   const structures = new StructureCache<{ record: unknown; fetchedAt: string }>();
 
@@ -91,6 +97,9 @@ export function createApiApp({ network, env = process.env, materialsEndpoint = "
     const rawLimit = req.query.limit;
     const limit = rawLimit === undefined ? 150 : typeof rawLimit === "string" && /^\d+$/.test(rawLimit) ? Number(rawLimit) : NaN;
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 10_000) return sendFailure(res, new NetworkFailure("INVALID_REQUEST", 400), "materials");
+    let filters: ReturnType<typeof mpFilterParams>;
+    try { filters = mpFilterParams(req.query, "Li,O"); }
+    catch { return sendFailure(res, new NetworkFailure("INVALID_REQUEST", 400), "materials"); }
     const apiKey = configuredKey(env.MP_API_KEY);
     if (!apiKey) return sendFailure(res, new NetworkFailure("MISSING_API_KEY", 503), "materials");
     const scope = requestScope(req, res, materialsDeadlineMs);
@@ -103,7 +112,7 @@ export function createApiApp({ network, env = process.env, materialsEndpoint = "
         const response = await network.request<{ data: unknown[] }>({
           url: materialsEndpoint, signal: scope.signal,
           headers: { accept: "application/json", "X-API-KEY": apiKey, "User-Agent": "AMI-AL-Prototype/2.0" },
-          params: { elements: "Li,O", _limit: pageSize, _skip: skip, _fields: "material_id,formula_pretty,elements,composition,band_gap,formation_energy_per_atom" },
+          params: { ...filters, _limit: pageSize, _skip: skip, _fields: MP_FIELDS },
         });
         if (response.status < 200 || response.status >= 300) throw httpFailure(response.status);
         const data = response.data?.data;

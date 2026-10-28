@@ -1,5 +1,7 @@
 # AMI-AL Research Framework
 
+> **Data Hub 开发版**：左侧已提供实时MP、离线MP、催化/电极和DFT+实验四源切换，以及带隙/形成能/凸包上能量等目标。SQLite快照、导入契约、10组偏差校准和证据边界见 [多源多保真 Data Hub](docs/data-hub.md)。主界面的真实数据失败路径不再生成Mock；特色实验库在没有可信数据时保持为空。下文原版带隙/Mock演示说明仅供兼容功能参考。
+
 > 工业级材料主动学习（Active Learning）优化系统 v2.0
 >
 > Industrial-Grade Materials Active Learning Optimization System

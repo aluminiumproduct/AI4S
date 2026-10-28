@@ -5,6 +5,7 @@ import { Sparkles, X, Send, Square, Trash2, ChevronDown, FlaskConical, Cpu, Mess
 import { advisorCandidates, advisorMessages, advisorQuestions, buildAdvisorContext, type AdvisorAction, type AdvisorContext, type AdvisorInput, type AdvisorLanguage } from "../services/AdvisorContext";
 import { advisorErrorMessage, requestAdvisor } from "../services/AdvisorService";
 import "./advisor.css";
+import { sourceLabel } from "../dataHub";
 
 export interface AdvisorRequest { requestId: number; materialId?: string; action?: AdvisorAction }
 interface Props { open: boolean; onClose(): void; input: AdvisorInput; lang: AdvisorLanguage; loading: boolean; request: AdvisorRequest | null }
@@ -112,7 +113,7 @@ export default function MaterialsAdvisor({ open, onClose, input, lang, loading, 
     </header>
 
     <section className="advisor-context" aria-label={zh ? "当前分析上下文" : "Current analysis context"}>
-      <div className="advisor-badges"><span className={input.isRealData ? "advisor-source-real" : "advisor-source-mock"}>{input.isRealData ? "Materials Project" : zh ? "Mock · 演示数据" : "Mock · demo"}</span><span>{zh ? "第" : "Round"} {input.state.iteration} {zh ? "轮" : ""}</span><span>{input.strategy} · {context.dataset.sampled}/{input.totalBudget}</span><button type="button" className="advisor-details-toggle" onClick={() => setCompact(!compact)} aria-expanded={!compact}>{compact ? (zh ? "展开上下文" : "Show context") : (zh ? "收起上下文" : "Hide context")}</button></div>
+      <div className="advisor-badges"><span className={input.isRealData ? "advisor-source-real" : "advisor-source-mock"}>{sourceLabel(context.dataset.source, lang)}</span><span>{zh ? "第" : "Round"} {input.state.iteration} {zh ? "轮" : ""}</span><span>{input.strategy} · {context.dataset.sampled}/{input.totalBudget}</span><button type="button" className="advisor-details-toggle" onClick={() => setCompact(!compact)} aria-expanded={!compact}>{compact ? (zh ? "展开上下文" : "Show context") : (zh ? "收起上下文" : "Hide context")}</button></div>
       {compact && selected && <p className="advisor-compact-selection">{selected.formula} · {selected.id} · µ {selected.prediction_mean_mu ?? "—"} · σ {selected.uncertainty_sigma ?? "—"}</p>}
       <div hidden={compact}>
       <label className="advisor-select-label" htmlFor="advisor-material">{zh ? "分析对象" : "Analyze"}</label>
@@ -123,7 +124,7 @@ export default function MaterialsAdvisor({ open, onClose, input, lang, loading, 
       {selected && <div className="advisor-selected-metrics"><span>µ {selected.prediction_mean_mu ?? "—"}</span><span>σ {selected.uncertainty_sigma ?? "—"}</span><span>{zh ? "成本" : "Cost"} {selected.cost.value ?? "—"}</span></div>}
       <button type="button" className="advisor-preview-toggle" onClick={() => setPreview(!preview)} aria-expanded={preview}><ChevronDown size={13} />{zh ? "查看将发送的数据摘要" : "Preview shared context"}</button>
       {preview && <div className="advisor-preview"><p>{zh ? "发送当前轮次、已采样最优材料、Top-3、选中材料的组成/特征/预测和近期收敛记录；不含未采样真实标签、密钥或结构文件。" : "Shares this round, the best sampled material, top candidates, selected composition/features/predictions and recent progress. No hidden candidate labels, keys or structure files."}</p><pre>{JSON.stringify(context, null, 2)}</pre></div>}
-      <p className="advisor-evidence-note">{input.isRealData ? (zh ? "目标：数据库带隙 / eV。特征来自组成与参考元素常数，成本为估计量。" : "Target: database band gap / eV. Features use composition and reference constants; costs are estimates.") : (zh ? "目标为确定性合成评分；组成描述符不能区分同质异构体。" : "Target: deterministic synthetic score. Composition descriptors cannot distinguish polymorphs.")}</p>
+      <p className="advisor-evidence-note">{context.objective.name} / {context.objective.unit}。{zh ? "来源、方法与保真度随快照保留；组成不能确定真实结构，成本为估计量。" : "The snapshot retains source, method and fidelity. Composition does not identify a crystal structure; costs are estimates."}</p>
       </div>
       <div className="advisor-actions">{actions.map(({ action, label, icon: Icon }) => <button type="button" key={action} disabled={busy || loading || (action !== "overview" && !selected)} onClick={() => { if (action === "overview") setSelectedId(null); void send(advisorQuestions[action][lang], action === "overview" ? null : selectedId); }}><Icon size={14} />{label}</button>)}</div>
     </section>
@@ -132,7 +133,7 @@ export default function MaterialsAdvisor({ open, onClose, input, lang, loading, 
       {!turns.length && <div className="advisor-welcome"><div><Sparkles size={26} /></div><h3>{zh ? "让每个候选，都有下一步" : "Give every candidate a next step"}</h3><p>{zh ? "先运行一轮学习，再选择材料。我会结合预测、探索价值与成本解释推荐，并帮你起草可验证的研究方案。" : "Run a learning step and select a material. I can explain predictions, exploration value and cost, then draft a testable research plan."}</p><p className="advisor-welcome-hint">{zh ? "也可以直接提问：当前排名更偏向性能，还是探索？" : "Or ask: does this ranking favor performance or exploration?"}</p></div>}
       {turns.map(turn => <article key={turn.id} className="advisor-turn">
         <div className="advisor-user"><p>{turn.question}</p></div>
-        <div ref={turn.id === turns.at(-1)?.id ? latestReply : undefined} className="advisor-turn-meta">{turn.capturedAt} · {zh ? "第" : "Round"} {turn.context.learning.iteration} {zh ? "轮快照" : "snapshot"} · {turn.context.dataset.source === "mock" ? "Mock" : "Materials Project"}{turn.context.selected_material ? ` · ${turn.context.selected_material.formula}` : ""}</div>
+        <div ref={turn.id === turns.at(-1)?.id ? latestReply : undefined} className="advisor-turn-meta">{turn.capturedAt} · {zh ? "第" : "Round"} {turn.context.learning.iteration} {zh ? "轮快照" : "snapshot"} · {sourceLabel(turn.context.dataset.source, lang)}{turn.context.selected_material ? ` · ${turn.context.selected_material.formula}` : ""}</div>
         <div className="advisor-answer">
           {turn.status === "pending" && <div role="status" className="advisor-pending"><span />{zh ? "正在结合本轮数据分析…" : "Analyzing this snapshot…"}</div>}
           {turn.status === "cancelled" && <p className="advisor-muted">{zh ? "已停止本次分析。" : "Analysis stopped."}</p>}

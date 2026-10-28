@@ -1,14 +1,23 @@
 import type { CompositionDescriptors } from "./engine/CompositionFeatures";
+import type { Fidelity, HubSource, ObjectiveId, Provenance, ScientificSource, StructureRef } from "./dataHub";
 
 export interface Material {
   id: string;
   formula: string;
   /** Explicit provenance; an unmarked record is never treated as a real structure. */
-  source?: "materials-project" | "mock";
+  source?: ScientificSource | "materials-project" | "mock";
+  fidelity?: Fidelity;
+  methodMeta?: string;
+  datasetSource?: HubSource;
+  provenance?: Provenance;
+  structureRef?: StructureRef;
+  pairedDft?: number;
+  cohort?: string;
+  comparisonBasis?: string;
   composition: Record<string, number>;
   features: number[];
   descriptors?: CompositionDescriptors;
-  targetKind?: "band-gap" | "synthetic-score";
+  targetKind?: ObjectiveId | "synthetic-score";
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost
   predictedMean?: number;

@@ -1,5 +1,6 @@
 import { Material } from "../types";
 import { createSeededRandom, hashString } from "./SeededRandom";
+import type { ObjectiveDirection } from "../dataHub";
 
 export type AcquisitionStrategy = "Random" | "Uncertainty" | "EI" | "UCB";
 
@@ -11,6 +12,7 @@ export class AcquisitionFunction {
     kappa: number = 2.0,
     isCostAware: boolean = true,
     random: () => number = createSeededRandom(hashString(`${material.id}|${bestObserved}`)),
+    direction: ObjectiveDirection = "max",
   ): number {
     const { mean, std } = { 
       mean: material.predictedMean ?? 0,
@@ -28,11 +30,11 @@ export class AcquisitionFunction {
         break;
 
       case "UCB":
-        value = mean + kappa * std;
+        value = (direction === "min" ? -mean : mean) + kappa * std;
         break;
 
       case "EI":
-        value = this.expectedImprovement(mean, std, bestObserved);
+        value = direction === "min" ? this.expectedImprovement(-mean, std, -bestObserved) : this.expectedImprovement(mean, std, bestObserved);
         break;
 
       default:

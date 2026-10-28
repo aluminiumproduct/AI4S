@@ -2,6 +2,7 @@ import type { ALState, Material } from "../types";
 import type { AcquisitionStrategy } from "../engine/AcquisitionFunction";
 import { FEATURE_DEFINITIONS, FEATURE_SCHEMA_VERSION } from "../engine/CompositionFeatures";
 import { MODEL_CATALOG, type ModelConfig } from "../engine/models/config";
+import { OBJECTIVES, type HubMetadata, type HubQuery } from "../dataHub";
 
 export type AdvisorAction = "overview" | "mechanism" | "synthesis" | "dft";
 export type AdvisorLanguage = "zh" | "en";
@@ -15,6 +16,9 @@ export interface AdvisorInput {
   isRealData: boolean;
   runId: number;
   modelConfig: ModelConfig;
+  hubMetadata?: HubMetadata | null;
+  hubQuery?: HubQuery;
+  hubLoadState?: "loading" | "ready" | "error";
 }
 
 const finite = (value: number | undefined) => Number.isFinite(value) ? Number(value!.toPrecision(7)) : null;
@@ -34,7 +38,15 @@ function describeMaterial(material: Material, isRealData: boolean) {
     && material.features.length === FEATURE_DEFINITIONS.length;
   return {
     id: text(material.id), formula: text(material.formula),
-    source: real ? "materials-project" : "mock",
+    source: material.source ?? (real ? "materials-project" : "mock"),
+    dataset_source: material.datasetSource ?? null,
+    fidelity: material.fidelity ?? null,
+    method: material.methodMeta ? text(material.methodMeta, 800) : null,
+    cohort: material.cohort ? text(material.cohort, 200) : null,
+    comparison_basis: material.comparisonBasis ? text(material.comparisonBasis, 2000) : null,
+    provenance: material.provenance ? { reference: text(material.provenance.reference, 2000), url: text(material.provenance.url, 2000),
+      dataset_version: text(material.provenance.datasetVersion, 400), retrieved_at: text(material.provenance.retrievedAt),
+      license: text(material.provenance.license, 800), task_ids: material.provenance.taskIds?.slice(0, 20).map(id => text(id)) ?? [] } : null,
     composition: Object.fromEntries(Object.entries(material.composition).slice(0, 32).map(([el, count]) => [text(el, 8), finite(count)])),
     descriptor_schema: material.descriptors?.schemaVersion ?? null,
     element_table_version: material.descriptors?.elementTableVersion ?? null,
@@ -63,25 +75,36 @@ function describeMaterial(material: Material, isRealData: boolean) {
 export function buildAdvisorContext(input: AdvisorInput, selectedId?: string | null) {
   const { pool, state, strategy, totalBudget, batchSize, isRealData, runId } = input;
   const model = MODEL_CATALOG.find(model => model.id === input.modelConfig.kind)!;
+  const hub = input.hubMetadata;
+  const requested = hub?.query ?? input.hubQuery;
+  const hubMode = !!requested || !!hub;
+  const objective = requested ? OBJECTIVES[requested.objective] : hub ? OBJECTIVES[hub.objective] : null;
+  const direction = objective?.direction ?? "max";
   const sampled = pool.filter(m => m.isSampled);
-  const best = sampled.filter(m => Number.isFinite(m.trueProperty)).reduce<Material | undefined>((winner, m) => !winner || m.trueProperty > winner.trueProperty ? m : winner, undefined);
+  const best = sampled.filter(m => Number.isFinite(m.trueProperty)).reduce<Material | undefined>((winner, m) => !winner || (direction === "min" ? m.trueProperty < winner.trueProperty : m.trueProperty > winner.trueProperty) ? m : winner, undefined);
   const selected = selectedId ? pool.find(m => m.id === selectedId) : undefined;
   const latestIteration = sampled.reduce((max, m) => Math.max(max, m.iteration ?? -1), -1);
   return {
     schema_version: 2,
     run_id: runId,
-    dataset: { source: isRealData ? "materials-project" : "mock", total: pool.length, sampled: sampled.length, unsampled: pool.length - sampled.length },
+    dataset: { source: hub?.effectiveSource ?? requested?.source ?? (isRealData ? "materials-project" : "mock"), version: hub?.datasetVersion ?? null,
+      status: hubMode ? input.hubLoadState === "error" ? "error" : pool.length ? "ready" : "empty" : "legacy",
+      query: requested ? { ...requested } : null,
+      cohorts: [...new Set(pool.map(m => m.cohort).filter((c): c is string => !!c))].slice(0, 20).map(c => text(c, 200)),
+      fetched_at: hub?.fetchedAt ?? null, fallback_reason: hub?.fallbackReason ?? null,
+      total: pool.length, sampled: sampled.length, unsampled: pool.length - sampled.length },
     objective: {
-      name: isRealData ? "maximize database band gap" : "maximize synthetic demonstration score",
-      unit: isRealData ? "eV" : "arbitrary units; not eV or conductivity",
-      evidence: isRealData ? "Materials Project calculated band gaps, not newly measured experiments" : "synthetic compositions and scores; chemical stability is unverified",
+      name: objective ? `${direction === "min" ? "minimize" : "maximize"} ${objective.en}` : isRealData ? "maximize database band gap" : "maximize synthetic demonstration score",
+      unit: objective?.unit ?? (isRealData ? "eV" : "arbitrary units; not eV or conductivity"),
+      direction,
+      evidence: hubMode ? `${input.hubLoadState === "error" ? "Dataset loading failed; no synthetic labels were generated. " : ""}Data Hub observations retain source/fidelity/method/cohort/provenance. Imported experimental claims require independent verification; values with unlike conditions must not be pooled.` : isRealData ? "Materials Project calculated band gaps, not newly measured experiments" : "synthetic compositions and scores; chemical stability is unverified",
     },
     learning: {
       iteration: state.iteration, strategy, batch_size: batchSize,
       total_sample_budget: totalBudget, remaining_sample_budget: Math.max(0, totalBudget - sampled.length),
       cost_aware: true, ucb_kappa: strategy === "UCB" ? 2 : null,
-      score_formula: strategy === "UCB" ? "(mu + 2 * sigma) / estimated_cost"
-        : strategy === "EI" ? "Normal-surrogate E[max(f - best_observed, 0)] / estimated_cost"
+      score_formula: strategy === "UCB" ? (direction === "min" ? "(-mu + 2 * sigma) / estimated_cost; maximize negative LCB utility" : "(mu + 2 * sigma) / estimated_cost")
+        : strategy === "EI" ? (direction === "min" ? "Normal-surrogate E[max(best_observed - f, 0)] / estimated_cost" : "Normal-surrogate E[max(f - best_observed, 0)] / estimated_cost")
           : strategy === "Uncertainty" ? "sigma / estimated_cost" : "stored uniform random draw / estimated_cost; not a performance ranking",
       surrogate: model.en,
       model_config: { ...input.modelConfig },
@@ -101,6 +124,7 @@ export function buildAdvisorContext(input: AdvisorInput, selectedId?: string | n
       "The tolerance factor is conditional on reference ABO3 sites, charges and radii; it does not establish structure or phase stability.",
       "High band gap does not establish high ionic/electronic conductivity. Acquisition scores are selection utilities, not probabilities.",
       "Offline oracle regret and placeholder error metrics are omitted; they are not experimental validation.",
+      "Fidelity labels describe method tiers, not guaranteed accuracy. The surrogate fits the selected targets; labels alone do not implement multi-fidelity learning. The separate constant-bias calibration does not rewrite original observations.",
       "Top-3 is ordered by stored acquisition score, not by mean alone. Do not infer the highest mean in the entire pool from this shortlist. Latest batch is only a partial training summary.",
     ],
   };
