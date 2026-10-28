@@ -7,6 +7,8 @@ import type { HubStore } from "./hubStore";
 import { HubInputError } from "./hubStore";
 import { createHubRouter } from "./hubRoutes";
 import { mpFilterParams, MP_FIELDS } from "./mpProvider";
+import { umlipRouter } from "./umlip/routes";
+import type { UmlipService } from "./umlip/service";
 
 interface ApiDependencies {
   network: NetworkClient;
@@ -17,6 +19,7 @@ interface ApiDependencies {
   materialsDeadlineMs?: number;
   chatDeadlineMs?: number;
   hub?: HubStore;
+  umlip?: UmlipService;
 }
 
 function configuredKey(value: string | undefined) {
@@ -51,9 +54,10 @@ function sendFailure(res: Response, error: unknown, service: "materials" | "chat
   });
 }
 
-export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000, hub }: ApiDependencies) {
+export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000, hub, umlip }: ApiDependencies) {
   const app = express();
   app.use("/api/hub", createHubRouter({ hub, network, env, materialsEndpoint, deadline: materialsDeadlineMs, requestScope }));
+  if (umlip) app.use("/api/umlip", umlipRouter(umlip));
   app.use(express.json({ limit: "100kb" }));
   const structures = new StructureCache<{ record: unknown; fetchedAt: string }>();
 

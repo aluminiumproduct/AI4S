@@ -9,3 +9,6 @@ coverage/
 /data/*.db
 /data/*.db-*
 /data/*.sqlite*
+umlip-results/
+.venv-umlip/
+__pycache__/
