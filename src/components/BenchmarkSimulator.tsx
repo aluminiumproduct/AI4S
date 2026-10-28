@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createSeededRandom } from '../engine/SeededRandom';
 import {
   LineChart,
   Line,
@@ -29,8 +30,8 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
 
   const t = {
     en: {
-      title: "Discovery Performance Benchmark",
-      subtitle: "Comparative Analysis of Discovery Rates in Chemical Space",
+      title: "Strategy Illustration",
+      subtitle: "Reproducible synthetic curves — not measured model performance",
       start: "Start Simulation",
       reset: "Reset",
       random: "Random Search",
@@ -38,16 +39,16 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
       amial: "AMI-AL (Our System)",
       steps: "Experimental Steps",
       bestValue: "Best Property Found",
-      speedupTitle: "Discovery Acceleration Metrics",
+      speedupTitle: "Measured speedup unavailable",
       vsRandom: "vs Random Search",
       vsGPBO: "vs Standard GP-BO",
-      desc: "This simulation benchmarks discovery efficiency across a high-dimensional search space (10^6 candidates). AMI-AL utilizes structural descriptors and ensemble uncertainty to navigate the landscape 3.5x faster than random sampling.",
+      desc: "These curves use scripted random increments, not fitted surrogate models. They do not establish discovery speedup. Use the model Worker validation page and benchmark:models for measured synthetic fit/predict results.",
       targetFound: "Target Found at Step",
-      discoveryRate: "Discovery Rate"
+      discoveryRate: "Animation progress"
     },
     zh: {
-      title: "发现性能基准测试",
-      subtitle: "化学空间发现速率对比分析",
+      title: "策略示意",
+      subtitle: "可重复的合成曲线，不是模型实测性能",
       start: "开始模拟",
       reset: "重置",
       random: "随机搜索 (Random)",
@@ -55,28 +56,29 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
       amial: "AMI-AL (本系统)",
       steps: "实验步骤",
       bestValue: "发现的最佳性能值",
-      speedupTitle: "发现加速指标",
+      speedupTitle: "发现加速比尚未实测",
       vsRandom: "对比随机搜索",
       vsGPBO: "对比标准 GP-BO",
-      desc: "本模拟在模拟的高维搜索空间（10^6 候选者）中测试发现效率。AMI-AL 利用结构描述符和集成不确定性，比随机采样快 3.5 倍实现目标发现。",
+      desc: "曲线由预设的随机增量生成，没有调用实际代理模型，不能证明发现加速比。模型 Worker 验证页和 benchmark:models 提供真实合成任务的拟合、预测耗时与误差。",
       targetFound: "目标发现步骤",
-      discoveryRate: "发现速率"
+      discoveryRate: "动画进度"
     }
   }[lang];
 
   const generateStep = (step: number, prev: SimulationPoint | null): SimulationPoint => {
+    const random = createSeededRandom(0x42454e43 + step);
     // Target is 1.0
     const target = 1.0;
     
     // Random: Slow linear-ish growth
-    const randomVal = prev ? Math.max(prev.random, Math.random() * 0.4 + (step / maxSteps) * 0.3) : 0.1;
+    const randomVal = prev ? Math.max(prev.random, random() * 0.4 + (step / maxSteps) * 0.3) : 0.1;
     
     // GP-BO: Faster logarithmic growth
-    const gpboVal = prev ? Math.max(prev.gpbo, Math.min(0.98, prev.gpbo + Math.random() * 0.05 * (1 - prev.gpbo / 1.1))) : 0.2;
+    const gpboVal = prev ? Math.max(prev.gpbo, Math.min(0.98, prev.gpbo + random() * 0.05 * (1 - prev.gpbo / 1.1))) : 0.2;
     
     // AMI-AL: Fastest sigmoid-like growth
-    // Reaching 0.95 around step 30 (3.5x faster than random reaching 0.95)
-    const amialVal = prev ? Math.max(prev.amial, Math.min(1.0, prev.amial + Math.random() * 0.15 * (1.05 - prev.amial))) : 0.35;
+    // Illustration only; no discovery-speedup measurement.
+    const amialVal = prev ? Math.max(prev.amial, Math.min(1.0, prev.amial + random() * 0.15 * (1.05 - prev.amial))) : 0.35;
 
     return {
       step,
@@ -211,16 +213,16 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
                 <p className="text-[10px] uppercase font-bold opacity-40">{t.vsRandom}</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-serif italic text-emerald-400">3.5x</span>
-                  <span className="text-[10px] opacity-40">Faster Discovery</span>
+                  <span className="text-4xl font-serif italic text-emerald-400">—</span>
+                  <span className="text-[10px] opacity-40">{lang === 'zh' ? '未实测' : 'Not measured'}</span>
                 </div>
               </div>
 
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
                 <p className="text-[10px] uppercase font-bold opacity-40">{t.vsGPBO}</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-serif italic text-blue-400">1.2x</span>
-                  <span className="text-[10px] opacity-40">Efficiency Gain</span>
+                  <span className="text-4xl font-serif italic text-blue-400">—</span>
+                  <span className="text-[10px] opacity-40">{lang === 'zh' ? '未实测' : 'Not measured'}</span>
                 </div>
               </div>
             </div>
@@ -238,7 +240,7 @@ export const BenchmarkSimulator: React.FC<{ lang: 'en' | 'zh' }> = ({ lang }) =>
 
           <div className="bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 space-y-3">
             <h4 className="text-[10px] font-bold uppercase tracking-widest text-emerald-800 flex items-center gap-2">
-              <Info size={14} /> {lang === 'en' ? 'Scientific Insight' : '科学洞察'}
+              <Info size={14} /> {lang === 'en' ? 'Illustration notes' : '示意说明'}
             </h4>
             <p className="text-[11px] leading-relaxed text-emerald-900/70 italic">
               {t.desc}

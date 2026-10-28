@@ -1,8 +1,14 @@
+import type { CompositionDescriptors } from "./engine/CompositionFeatures";
+
 export interface Material {
   id: string;
   formula: string;
+  /** Explicit provenance; an unmarked record is never treated as a real structure. */
+  source?: "materials-project" | "mock";
   composition: Record<string, number>;
   features: number[];
+  descriptors?: CompositionDescriptors;
+  targetKind?: "band-gap" | "synthetic-score";
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost
   predictedMean?: number;
