@@ -13,7 +13,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "benchmark:models": "tsx scripts/benchmark-models.ts"
+    "benchmark:models": "tsx scripts/benchmark-models.ts",
+    "verify:umlip": "tsx scripts/verify-umlip.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

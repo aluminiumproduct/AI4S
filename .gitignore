@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+umlip-results/
+.venv-umlip/
+__pycache__/

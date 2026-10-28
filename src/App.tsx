@@ -38,6 +38,8 @@ import { advisorCandidates, type AdvisorAction } from "./services/AdvisorContext
 
 import StructurePanel from "./components/StructurePanel";
 import type { MaterialStructureRequest } from "./structures/materialStructure";
+
+const UmlipPanel = React.lazy(() => import("./components/UmlipPanel"));
 import { CompositionDescriptorPanel } from "./components/CompositionDescriptorPanel";
 import { hashString } from "./engine/SeededRandom";
 
@@ -141,6 +143,9 @@ const translations = {
 };
 
 export default function App() {
+  const [showUmlip, setShowUmlip] = useState(false);
+  const [hasOpenedUmlip, setHasOpenedUmlip] = useState(false);
+  const openUmlip = () => { setHasOpenedUmlip(true); setShowUmlip(true); };
   const [lang, setLang] = useState<"en" | "zh">("zh");
   const t = translations[lang];
 
@@ -321,8 +326,10 @@ export default function App() {
           <button type="button" onClick={openStructure} className="px-4 py-2 border rounded-lg">
             {lang === "zh" ? "先导入结构 / 3D 查看" : "Import structure / 3D viewer"}
           </button>
+          <button type="button" onClick={openUmlip} className="block mx-auto mt-3 px-4 py-2 border rounded-lg">uMLIP 同成分构型计算</button>
         </div>
         {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
+        {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
       </div>
     );
   }
@@ -340,6 +347,9 @@ export default function App() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={openUmlip} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#486c51] bg-[#e6edde] text-[#34523d] text-xs font-bold">
+            <Cpu size={14} /> {lang === "zh" ? "uMLIP 构型寻优" : "uMLIP configuration search"}
+          </button>
           <button type="button" onClick={() => openAdvisor()} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#b5a36d] bg-[#f3ecd7] text-[#514522] text-xs font-bold">
             <Sparkles size={14} /> {lang === "zh" ? "AI 首席材料顾问" : "AI Materials Advisor"}
           </button>
@@ -986,6 +996,7 @@ export default function App() {
         )}
       </AnimatePresence>
       {hasOpenedStructure && <React.Fragment key="structure-workspace"><StructurePanel open={showStructure} onClose={() => setShowStructure(false)} lang={lang} materialRequest={structureMaterial} onImportMode={openStructure} /></React.Fragment>}
+      {hasOpenedUmlip && <React.Suspense key="umlip-workspace" fallback={<p role="status">正在加载 uMLIP 工作流…</p>}><UmlipPanel open={showUmlip} onClose={() => setShowUmlip(false)} lang={lang} /></React.Suspense>}
     </div>
   );
 }

@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { NetworkFailure, httpFailure, networkFailure, type NetworkClient } from "./network";
 import { isMaterialId, normalizeMaterialStructure } from "../src/structures/materialStructure";
 import { StructureCache } from "../src/structures/StructureCache";
+import { umlipRouter } from "./umlip/routes";
+import type { UmlipService } from "./umlip/service";
 
 interface ApiDependencies {
   network: NetworkClient;
@@ -12,6 +14,7 @@ interface ApiDependencies {
   chatBaseURL?: string;
   materialsDeadlineMs?: number;
   chatDeadlineMs?: number;
+  umlip?: UmlipService;
 }
 
 function configuredKey(value: string | undefined) {
@@ -46,8 +49,9 @@ function sendFailure(res: Response, error: unknown, service: "materials" | "chat
   });
 }
 
-export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000 }: ApiDependencies) {
+export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000, umlip }: ApiDependencies) {
   const app = express();
+  if (umlip) app.use("/api/umlip", umlipRouter(umlip));
   app.use(express.json({ limit: "100kb" }));
   const structures = new StructureCache<{ record: unknown; fetchedAt: string }>();
 
