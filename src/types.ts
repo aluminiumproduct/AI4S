@@ -1,4 +1,5 @@
 import type { CompositionDescriptors } from "./engine/CompositionFeatures";
+import type { SynthesisFeedback } from "./synthesis/types";
 
 export interface Material {
   id: string;
@@ -9,6 +10,7 @@ export interface Material {
   features: number[];
   descriptors?: CompositionDescriptors;
   targetKind?: "band-gap" | "synthetic-score";
+  synthesisFeedback?: SynthesisFeedback;
   trueProperty: number; // Only known to the "Oracle"
   cost: number; // Experimental or computational cost
   predictedMean?: number;

@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { NetworkFailure, httpFailure, networkFailure, type NetworkClient } from "./network";
 import { isMaterialId, normalizeMaterialStructure } from "../src/structures/materialStructure";
 import { StructureCache } from "../src/structures/StructureCache";
+import { createSynthesisRouter } from "./synthesis";
 
 interface ApiDependencies {
   network: NetworkClient;
@@ -48,6 +49,7 @@ function sendFailure(res: Response, error: unknown, service: "materials" | "chat
 
 export function createApiApp({ network, env = process.env, materialsEndpoint = "https://api.materialsproject.org/materials/summary/", chatBaseURL, materialsDeadlineMs = 60_000, chatDeadlineMs = 45_000 }: ApiDependencies) {
   const app = express();
+  app.use("/api/synthesis", createSynthesisRouter({ network, env, materialsEndpoint }));
   app.use(express.json({ limit: "100kb" }));
   const structures = new StructureCache<{ record: unknown; fetchedAt: string }>();
 
