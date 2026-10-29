@@ -61,3 +61,11 @@ git diff --check
 ```
 
 工程回归使用内存或隔离库的明确测试夹具；真实MP/MACE/XRD链路与夹具校准记录分开验证，默认库不预置实验标签。
+
+## 界面验证截图
+
+本次研究以40条MP观测、解析公式、8个非支配方案及2个收敛MACE构型展示完整结果。两份XRD演示谱分别绑定各自构型，点击构型后切换对应报告。
+
+![本次研究成果总览](images/unified-research-overview.jpg)
+
+![构型与XRD按来源联动](images/unified-research-structure-xrd.jpg)
